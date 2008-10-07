@@ -16,16 +16,27 @@ class Library(node):
     __tag__ = u'library'
     def construct(self):
 
+        #get the module name
         p = self.tag.attributes['library'].nodeValue
-        p.replace('.','/')
+        
+        #turn it into a path
+        p = p.replace('.','/')
+        
+        #add the file extension
         p = p + '.wfx'
         
+        #make sure it's good
         if not os.path.isfile(p):
             raise IOError('%s is not a file!' % p)
         
 
-        library_dom = parse()
+        #parse it
+        library_dom = parse(p)
+
+        #get the child nodes
         library = library_dom.childNodes[0]
+
+        #create the tags
 
         #wow this is funky....?
         for i in range(len(library.childNodes)):

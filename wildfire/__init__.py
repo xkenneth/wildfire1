@@ -38,15 +38,15 @@ def run(filename):
     run_scripts(doc)
 
     #create the datathread
-    datathread = Datathread()
+    #datathread = Datathread()
     
     
-    datathread.doc = doc
-    datathread.start()
+    #datathread.doc = doc
+    #datathread.start()
     
     pdb.set_trace()
 
-    datathread.quit = True
+    #datathread.quit = True
 
-    datathread.join()
+    #datathread.join()
     
