@@ -2,6 +2,7 @@ import pdb
 from copy import deepcopy
 from helper import correct_indentation, is_junk, extend
 import new
+import os
 from xml.dom.minidom import parse
 
 class node:
@@ -14,8 +15,16 @@ class Document(node):
 class Library(node):
     __tag__ = u'library'
     def construct(self):
+
+        p = self.tag.attributes['library'].nodeValue
+        p.replace('.','/')
+        p = p + '.wfx'
         
-        library_dom = parse(self.tag.attributes['library'].nodeValue+'.wfx')
+        if not os.path.isfile(p):
+            raise IOError('%s is not a file!' % p)
+        
+
+        library_dom = parse()
         library = library_dom.childNodes[0]
 
         #wow this is funky....?
