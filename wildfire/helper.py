@@ -45,7 +45,7 @@ def extend(target,source,attributes=True,ignore_duplicates=False):
             if ignore_duplicates:
                 if source.childNodes[i].tagName == target.childNodes[i].tagName:
                     if len(source.childNodes[i].attributes.keys()) == len(target.childNodes[j].attributes.keys()):
-                
+                        pass
             target.childNodes.append(source.childNodes[i])
 
     if attributes:
