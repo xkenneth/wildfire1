@@ -7,6 +7,8 @@ doc = None
 uid = 0
 
 def assemble(tree,parent=None,data=None):
+    """Properly setup a tree of nodes."""
+
     global doc, uid
     
     #wipe out our new_node name
@@ -14,6 +16,7 @@ def assemble(tree,parent=None,data=None):
     
     #construct the node, instantantiate it's class and assign the tag
     new_node = construct_class(tree)
+    
     
     if new_node is None:
         return
@@ -33,8 +36,8 @@ def assemble(tree,parent=None,data=None):
         new_node.data = data
 
     # call the native construct
-    if hasattr(new_node,'construct'):
-        new_node.construct()
+    if hasattr(new_node,'_construct'):
+        new_node._construct()
 
     #if we've got a handler we need to attach it to the parent
     if new_node.__tag__ == u'handler':
@@ -53,7 +56,6 @@ def assemble(tree,parent=None,data=None):
         #append the new handler
         getattr(parent,handler_name).append(new_node)
 
-    
 
     #if it's a class we need to stop here
     if new_node.__tag__ == u'class':
@@ -75,11 +77,11 @@ def assemble(tree,parent=None,data=None):
     
     if new_node.tag.attributes:
         if new_node.tag.hasAttribute(u'id'):
-            setattr(doc,str(new_node.tag.attributes[u'id'].value),new_node)
+            setattr(doc,str(new_node.tag.attributes[u'id'].value.value),new_node)
             
     if new_node.tag.attributes:
-        if new_node.tag.hasAttribute(u'name'):
-            setattr(parent,str(new_node.tag.attributes[u'name'].value),new_node)
+        if new_node.tag.hasAttribute(u'local'):
+            setattr(parent,str(new_node.tag.attributes[u'local'].value.value),new_node)
 
     # if it's a dataset we need to stop here
     if new_node.__tag__ == u'dataset':
@@ -94,6 +96,16 @@ def assemble(tree,parent=None,data=None):
 
     #attach the children to the node
     new_node.child_nodes = children
+    
+    #handling given attributes - we need to do this after all of the attribute tags have been executed
+    if new_node is not doc:
+        for attr_key in new_node.__wfattrs__:
+            if new_node.tag.hasAttribute(attr_key):
+                try:
+                    attr_val = eval(new_node.tag.attributes[attr_key].value.value)
+                except SyntaxError:
+                    attr_val = new_node.tag.attributes[attr_key].value.value
+                new_node.__wfattrs__[attr_key].set(attr_val)
 
     #if we're at the top level node we need to call the init and lates
     
@@ -104,6 +116,7 @@ def assemble(tree,parent=None,data=None):
     #if this is the top-most node as called by assemble
     if not parent:
         #construct it
+        print "Later"
         call_func(new_node,'construct',child_first=False)
         
         call_func(new_node,'init')
@@ -119,7 +132,6 @@ def construct_class(node):
     """Create a node from the xml tag."""
 
     if is_junk(node): return
-        
     
     #for all of the available tag_names
     for tag in tags:

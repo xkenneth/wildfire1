@@ -6,8 +6,27 @@ import os
 from xml.dom.minidom import parse
 
 class node:
+    #a list to hold the name of the runtime defined attributes
+    __wfattrs__ = {}
     def __repr__(self):
         return "<"+self.__tag__+">"
+
+    def __setattr__(self,name,value):
+        try:
+            #see if it's a wf specific attribute
+            self.__wfattrs__[name].set(value)
+        except KeyError:
+            #if not set it in the normal method
+            self.__dict__[name] = value
+    
+    def __getattr__(self,name):
+        #dangerous overring this i imagine
+        #so we look through my custom attributes
+        try:
+            return self.__wfattrs__[name].get()
+        except KeyError:
+            #and raise a similar error if we can't find them!!!!!
+            raise AttributeError('%s does not exist as a standard or WF attribute' % name)
 
 class Document(node):
     __tag__ = u'#document'
@@ -15,7 +34,7 @@ class Document(node):
 class Library(node):
     __tag__ = u'library'
 
-    def construct(self):
+    def _construct(self):
 
         #get the module name
         p = self.tag.attributes['library'].nodeValue
@@ -45,7 +64,7 @@ class Library(node):
 
 class Import(node):
     __tag__ = u'import'
-    def construct(self):
+    def _construct(self):
         import tags
         tags.__dict__[self.tag.attributes['module'].nodeValue] = __import__(self.tag.attributes['module'].nodeValue)
 
@@ -60,14 +79,29 @@ class Handler(node):
     def __call__(self,event=None):
         exec correct_indentation(self.tag.childNodes[0].wholeText)
 
+class Attr(object):
+    """Class for handling the getting and setting of an attribute."""
+    def __init__(self):
+        self.value = None
+
+    def set(self,value):
+        self.value = value
+
+    def get(self):
+        return self.value
+
 class Attribute(node):
+    """The actual attribute tag."""
 
     __tag__ = u'attribute'
+    
 
-    def construct(self):
-
+    def _construct(self):
         #get the attribute
         attr_name = self.tag.attributes['name'].nodeValue
+        #self.parent.__attrs__.append(attr_name)
+        self.parent.__wfattrs__[attr_name] = Attr()
+        #setattr(self.parent,attr_name,property(new_attr.default_set,new_attr.default_get))
         
         #if it's a constraint
 
@@ -85,7 +119,7 @@ class Attribute(node):
 
 class Dataset(node):
     __tag__ = u'dataset'
-    def construct(self):
+    def _construct(self):
         self.data = None
 
         try:
@@ -103,8 +137,7 @@ class Dataset(node):
 class Class(node):
     __tag__ = u'class'
     
-    def construct(self):
-        print "Native construct"
+    def _construct(self):
         parent_tag = None
         
         #if it's extending something other than view
@@ -147,14 +180,14 @@ class Class(node):
         
 class Script(Handler):
     __tag__ = u'script'
-    #def construct(self):
+    #def _construct(self):
         #this should probably use an intelligent search function
     #    exec correct_indentation(self.tag.childNodes[0].wholeText)
 
 class Replicate(node):
     __tag__ = u'replicate'
     
-    def construct(self):
+    def _construct(self):
         self.data_nodes = []
         self.data = eval(self.tag.attributes['over'].nodeValue)
         for data in self.data:
