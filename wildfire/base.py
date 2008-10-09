@@ -1,6 +1,6 @@
 #import all of the built in tags
 import pdb
-from helper import is_junk, extend
+from helper import is_junk, extend, call_func
 from tags import tags
 
 doc = None
@@ -68,7 +68,14 @@ def assemble(tree,parent=None,data=None):
 
     #if we've got a handler we need to attach it to the parent
     if new_node.__tag__ == u'handler':
-        setattr(parent,new_node.tag.attributes['on'].childNodes[0].wholeText,new_node)
+        #get the handler name
+        handler_name = new_node.tag.attributes['on'].childNodes[0].wholeText
+        #if a list hasn't been setup for this handler
+        if not hasattr(parent,handler_name):
+            #create it
+            setattr(parent,handler_name,[])
+        #append the new handler
+        getattr(parent,handler_name).append(new_node)
     
     
 
@@ -79,16 +86,20 @@ def assemble(tree,parent=None,data=None):
         if new_child is not None:
             children.append(new_child)
 
-    #init
-    #print "Calling init",parent
-    #if hasattr(new_node,'_init'): new_node._init()
-        
     #attach the children to the node
     new_node.child_nodes = children
-    
-    #early
 
+    #if we're at the top level node we need to call the init and lates
     
+
+    #early
+    
+    #init
+    #if this is the top-most node as called by assemble
+    if not parent:
+        pdb.set_trace()
+        call_func(new_node,'init')
+
     #late
 
     #at the end, return the document

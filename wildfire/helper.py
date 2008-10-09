@@ -27,11 +27,22 @@ def correct_indentation(script):
 
 def call_func(node,func):
     """pre order function call."""
-    if hasattr(node,func):
-            getattr(node,func)()
-    
+
+    #for all of the children
     for sub_node in node.child_nodes:
         call_func(sub_node,func)    
+
+    #if we've got the function
+    if hasattr(node,func):
+        try:
+            #try to iterate over a list of functions
+            for i in getattr(node,func):
+                i()
+        except TypeError:
+            #else try to call a singular function
+            getattr(node,func)()
+            
+    
     
     
 

@@ -29,13 +29,13 @@ def run(filename):
     doc = assemble(tree)
     
     #call the init methods
-    call_func(doc,'init')
+    #call_func(doc,'init')
+
+    #run the scripts after the nodes have been assembled
+    run_scripts(doc)
 
     #call the late methods
     call_func(doc,'late')
-    
-    #run the scripts after the nodes have been assembled
-    run_scripts(doc)
 
     #create the datathread
     #datathread = Datathread()
@@ -44,8 +44,6 @@ def run(filename):
     #datathread.doc = doc
     #datathread.start()
     
-    pdb.set_trace()
-
     #datathread.quit = True
 
     #datathread.join()
