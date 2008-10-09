@@ -32,9 +32,28 @@ def assemble(tree,parent=None,data=None):
     if data is not None:
         new_node.data = data
 
-    #construct it
+    # call the native construct
     if hasattr(new_node,'construct'):
         new_node.construct()
+
+    #if we've got a handler we need to attach it to the parent
+    if new_node.__tag__ == u'handler':
+        #get the handler name
+        handler_name = new_node.tag.attributes['on'].childNodes[0].wholeText
+        #if a list hasn't been setup for this handler
+        if not hasattr(parent,handler_name):
+            #create it
+            setattr(parent,handler_name,[])
+        else:
+            #if it is there, and it's not a list
+            if not isinstance(getattr(parent,handler_name),list):
+                #make it into a list with the first item as the old value
+                setattr(parent,handler_name,[getattr(parent,handler_name)])
+            
+        #append the new handler
+        getattr(parent,handler_name).append(new_node)
+
+    
 
     #if it's a class we need to stop here
     if new_node.__tag__ == u'class':
@@ -64,20 +83,7 @@ def assemble(tree,parent=None,data=None):
 
     # if it's a dataset we need to stop here
     if new_node.__tag__ == u'dataset':
-        return
-
-    #if we've got a handler we need to attach it to the parent
-    if new_node.__tag__ == u'handler':
-        #get the handler name
-        handler_name = new_node.tag.attributes['on'].childNodes[0].wholeText
-        #if a list hasn't been setup for this handler
-        if not hasattr(parent,handler_name):
-            #create it
-            setattr(parent,handler_name,[])
-        #append the new handler
-        getattr(parent,handler_name).append(new_node)
-    
-    
+        return    
 
     #construct all of the children recursively
     children = []
@@ -97,7 +103,9 @@ def assemble(tree,parent=None,data=None):
     #init
     #if this is the top-most node as called by assemble
     if not parent:
-        pdb.set_trace()
+        #construct it
+        call_func(new_node,'construct',child_first=False)
+        
         call_func(new_node,'init')
 
     #late

@@ -14,6 +14,7 @@ class Document(node):
 
 class Library(node):
     __tag__ = u'library'
+
     def construct(self):
 
         #get the module name
@@ -60,18 +61,27 @@ class Handler(node):
         exec correct_indentation(self.tag.childNodes[0].wholeText)
 
 class Attribute(node):
+
     __tag__ = u'attribute'
+
     def construct(self):
+
+        #get the attribute
         attr_name = self.tag.attributes['name'].nodeValue
+        
+        #if it's a constraint
+
+        #not sure what the hell this is doing
+
         #attempt to eval
-        try:
-            data = eval(self.parent.tag.attributes[attr_name].value.value)
-        except Exception, e:
-            print e
-            data = self.parent.tag.attributes[attr_name].value.value
+        #try:
+        #    data = eval(self.parent.tag.attributes[attr_name].value.value)
+        #except Exception, e:
+        #    print e
+        #    data = self.parent.tag.attributes[attr_name].value.value
             
-        if self.parent.tag.hasAttribute(attr_name):
-            setattr(self.parent,attr_name,data)
+        #if self.parent.tag.hasAttribute(attr_name):
+        #    setattr(self.parent,attr_name,data)
 
 class Dataset(node):
     __tag__ = u'dataset'
@@ -94,6 +104,7 @@ class Class(node):
     __tag__ = u'class'
     
     def construct(self):
+        print "Native construct"
         parent_tag = None
         
         #if it's extending something other than view

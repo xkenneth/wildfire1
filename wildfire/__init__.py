@@ -36,6 +36,8 @@ def run(filename):
 
     #call the late methods
     call_func(doc,'late')
+    
+    pdb.set_trace()
 
     #create the datathread
     #datathread = Datathread()
