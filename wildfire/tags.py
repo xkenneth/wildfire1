@@ -115,7 +115,7 @@ class Attribute(node):
         #get the attribute
         attr_name = self.tag.attributes['name'].nodeValue
         #self.parent.__attrs__.append(attr_name)
-        print self.parent,attr_name
+        #print self.parent,attr_name
         self.parent.__wfattrs__[attr_name] = Attr()
         #setattr(self.parent,attr_name,property(new_attr.default_set,new_attr.default_get))
         
@@ -217,7 +217,7 @@ class Replicate(node):
     def update(self):
         new_data = eval(self.tag.attributes['over'].nodeValue)
         if self.data != new_data:
-            print self.data,new_data
+            #print self.data,new_data
             print "Data Changed!"
 
 class Event(node):

@@ -1,6 +1,7 @@
 #import all of the built in tags
 import pdb
-from helper import is_junk, extend, call_func_inorder, call_func_postorder
+from copy import copy
+from helper import is_junk, extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
 from tags import tags
 
 doc = None
@@ -11,16 +12,16 @@ def assemble(tree,parent=None,data=None):
 
     global doc, uid
 
-    
     #wipe out our new_node name
     new_node = None
     
     #construct the node, instantantiate it's class and assign the tag
     new_node = construct_class(tree)
+    
+    
 
     if new_node is None:
         return
-
 
     #if the toplevel doc is none, then the first node we come across should be it
     if doc is None:
@@ -106,23 +107,16 @@ def assemble(tree,parent=None,data=None):
     
     
     
-    #calling the added construct methods
-    #if hasattr(new_node,'construct'):
-    #    print "C:",new_node
-    #    for c in new_node.construct:
-    #        c()
-
-    
-    
     #handling given attributes - we need to do this after all of the attribute tags have been executed
     if new_node is not doc:
+        #for all of the class defined attributes
         for attr_key in new_node.__wfattrs__:
-            if new_node.tag.hasAttribute(attr_key):
-                
+
+            if new_node.tag.hasAttribute(attr_key):                
                 attr_val = None
                 try:
                     #try to see if the attribute is a python expression (this takes care of converting to int, etc)
-                    attr_val = eval(new_node.tag.attributes[attr_key].value.value)
+                    attr_val = eval(new_node.tag.attributes[attr_key].value)
                 except NameError:
                     pass
                 except SyntaxError:
@@ -132,7 +126,7 @@ def assemble(tree,parent=None,data=None):
 
                 #if not take it as a string
                 if attr_val is None:
-                    attr_val = new_node.tag.attributes[attr_key].value.value
+                    attr_val = new_node.tag.attributes[attr_key].value
                 
                 new_node.__wfattrs__[attr_key].set(attr_val)
 
@@ -146,6 +140,8 @@ def assemble(tree,parent=None,data=None):
     if not parent:
         call_func_inorder(new_node,'construct')
         call_func_postorder(new_node,'init')
+        #call_func_postorder(new_node,'late')
+        call_by_level(new_node,func='late')
 
     #late
 
@@ -156,7 +152,7 @@ def assemble(tree,parent=None,data=None):
     
 def construct_class(node):
     """Create a node from the xml tag."""
-
+    
     if is_junk(node): return
     
     #for all of the available tag_names
@@ -168,9 +164,8 @@ def construct_class(node):
 
             #add new tags that have been added
             if hasattr(new_node,'tag'):
-                extend(new_node.tag,node)
-            else:
-                new_node.tag = node
+                extend(node,new_node.tag)
+            new_node.tag = node
             
             #add new attributes
                 
