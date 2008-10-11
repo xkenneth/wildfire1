@@ -7,8 +7,9 @@ from xml.dom.minidom import parse
 
 class node:
     #a list to hold the name of the runtime defined attributes
-    def __init__(self):
+    def __init__(self,parent):
         self.__dict__['__wfattrs__'] = {}
+        self.parent = parent
 
     def __repr__(self):
         return "<"+self.__tag__+">"
@@ -37,32 +38,38 @@ class Library(node):
     __tag__ = u'library'
 
     def _construct(self):
-
+        
         #get the module name
-        p = self.tag.attributes['library'].nodeValue
+
+        self.module = self.tag.attributes['library'].nodeValue
         
-        #turn it into a path
-        p = p.replace('.','/')
+        path = os.path.join(self.parent.import_path,self.module)
         
-        #add the file extension
-        p = p + '.wfx'
+        if os.path.isdir(path):
+            self.import_path = path
+            path = os.path.join(path,self.module+'.wfx')
+        else:
+            path = os.path.join(self.parent.import_path,self.module+'.wfx')
+            self.import_path = self.parent.import_path
         
         #make sure it's good
-        if not os.path.isfile(p):
-            raise IOError('%s is not a file!' % p)
+        if not os.path.isfile(path):
+            raise IOError('%s is not a file!' % path)
         
 
         #parse it
-        library_dom = parse(p)
+        library_dom = parse(path)
+
+        self.library_nodes = library_dom.childNodes[0].childNodes
 
         #get the child nodes
-        library = library_dom.childNodes[0]
+        #library = library_dom.childNodes[0]
 
         #create the tags
 
         #wow this is funky....?
-        for i in range(len(library.childNodes)):
-            self.tag.childNodes.append(library.childNodes[i])
+        #for i in range(len(library.childNodes)):
+        #    self.tag.childNodes.append(library.childNodes[i])
 
 class Import(node):
     __tag__ = u'import'

@@ -3,6 +3,7 @@ import pdb
 from copy import copy
 from helper import is_junk, extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
 from tags import tags
+import os
 
 doc = None
 uid = 0
@@ -16,7 +17,7 @@ def assemble(tree,parent=None,data=None):
     new_node = None
     
     #construct the node, instantantiate it's class and assign the tag
-    new_node = construct_class(tree)
+    new_node = construct_class(tree,parent)
     
     
 
@@ -25,14 +26,17 @@ def assemble(tree,parent=None,data=None):
 
     #if the toplevel doc is none, then the first node we come across should be it
     if doc is None:
-        doc = new_node
+        #we want to ignore the #document tag, because it's dumb
+        if new_node.__tag__ == u'#document':
+            return assemble(tree.childNodes[0],parent=parent,data=data)
+            
+        else:
+            doc = new_node
+            doc.import_path = os.getcwd()
     else:
+        #assign the doc directly
         new_node.doc = doc
         
-    #assign the parent if present
-    if parent is not None:
-        new_node.parent = parent
-
     #assign a global UID to each node (useful for debug mostly)
     new_node.uid = uid
     uid += 1
@@ -44,6 +48,11 @@ def assemble(tree,parent=None,data=None):
     # call the native construct
     if hasattr(new_node,'_construct'):
         new_node._construct()
+
+    if new_node.__tag__ == u'library':
+        for lnode in new_node.library_nodes:
+            assemble(lnode,parent=new_node,data=data)
+        return
 
     #if we've got a handler we need to attach it to the parent
     if new_node.__tag__ == u'handler':
@@ -150,7 +159,7 @@ def assemble(tree,parent=None,data=None):
 
 
     
-def construct_class(node):
+def construct_class(node,parent):
     """Create a node from the xml tag."""
     
     if is_junk(node): return
@@ -160,7 +169,7 @@ def construct_class(node):
         #find the tag to create
         if tag.__tag__ == node.nodeName:
             #create an instance
-            new_node = tag()
+            new_node = tag(parent)
 
             #add new tags that have been added
             if hasattr(new_node,'tag'):
