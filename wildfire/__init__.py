@@ -25,10 +25,7 @@ def run(filename,debug=True):
     doc = assemble(tree)
     
     #run the scripts after the nodes have been assembled
-    pdb.set_trace()
-
     run_scripts(doc)
-
+    
     pdb.set_trace()
-    
-    
+    print "Done."

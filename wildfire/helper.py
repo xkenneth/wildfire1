@@ -30,8 +30,10 @@ def call_list(node,func):
     if hasattr(node,func):
         try:
             #try to iterate over a list of functions
-            for i in getattr(node,func):
-                i()
+            #call the list backwards
+            for i in range(len(getattr(node,func))):
+                getattr(node,func)[-(i+1)]()
+
         except TypeError:
             #else try to call a singular function
             getattr(node,func)()

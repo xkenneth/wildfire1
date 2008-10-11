@@ -3,7 +3,9 @@ from copy import deepcopy
 from helper import correct_indentation, is_junk, extend
 import new
 import os
+import sys
 from xml.dom.minidom import parse
+from xml.parsers.expat import ExpatError
 
 class node:
     #a list to hold the name of the runtime defined attributes
@@ -58,7 +60,12 @@ class Library(node):
         
 
         #parse it
-        library_dom = parse(path)
+        try:
+            library_dom = parse(path)
+        except ExpatError, e:
+            print e
+            raise ImportError('Could not load module %s',path)
+            sys.exit()
 
         self.library_nodes = library_dom.childNodes[0].childNodes
 
@@ -179,10 +186,12 @@ class Class(node):
                     #hold onto to the combined tag
                     parent_tag.tag = self.tag
         else:
-            #if we're just extending view
-            parent_tag = View
+            #if we're just extending node
+            parent_tag = node
         
-            
+        if parent_tag is None:
+            raise Exception('Could not find super tag %s' % search_tag)
+
         #create a copy of the class
         new_class = new.classobj(str(self.tag.attributes['name'].nodeValue),parent_tag.__bases__, parent_tag.__dict__.copy())
 
