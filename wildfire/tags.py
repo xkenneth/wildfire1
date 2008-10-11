@@ -236,8 +236,15 @@ class Replicate(node):
             #print self.data,new_data
             print "Data Changed!"
 
+class Eve(node):
+    def __init__(self,native,runtime):
+        self.native = native
+        self.runtime = runtime
+    
+
 class Event(node):
     __tag__ = u'event'
+    pdb.set_trace()
                     
 
 tags = [Document,Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event]

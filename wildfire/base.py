@@ -32,6 +32,7 @@ def assemble(tree,parent=None,data=None):
             
         else:
             doc = new_node
+            doc.events = []
             doc.import_path = os.getcwd()
     else:
         #assign the doc directly
