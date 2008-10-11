@@ -7,7 +7,9 @@ from xml.dom.minidom import parse
 
 class node:
     #a list to hold the name of the runtime defined attributes
-    __wfattrs__ = {}
+    def __init__(self):
+        self.__dict__['__wfattrs__'] = {}
+
     def __repr__(self):
         return "<"+self.__tag__+">"
 
@@ -82,24 +84,38 @@ class Handler(node):
 class Attr(object):
     """Class for handling the getting and setting of an attribute."""
     def __init__(self):
+        #the current value of the attribute
         self.value = None
+        # the function or functions registered to watch updates of said attribute
+        #each registered function should provide an object and a lambda function with
+        #the object as the first argument and the value as the second for updates
+        self.funcs = []
 
     def set(self,value):
         self.value = value
+        
+        for obj,func in self.funcs:
+            func(obj,value)
+            
 
     def get(self):
         return self.value
+    
+    def register(self,func):
+        #add the function to our registered functions
+        self.funcs.append(func)
+
 
 class Attribute(node):
     """The actual attribute tag."""
 
     __tag__ = u'attribute'
-    
 
     def _construct(self):
         #get the attribute
         attr_name = self.tag.attributes['name'].nodeValue
         #self.parent.__attrs__.append(attr_name)
+        print self.parent,attr_name
         self.parent.__wfattrs__[attr_name] = Attr()
         #setattr(self.parent,attr_name,property(new_attr.default_set,new_attr.default_get))
         

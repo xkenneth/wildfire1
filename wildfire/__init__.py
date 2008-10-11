@@ -1,7 +1,7 @@
 import pdb
 from xml.dom.minidom import parse
 from base import assemble
-from helper import call_func
+from helper import call_func_postorder
 import threading
 import time
 
@@ -19,7 +19,12 @@ def run_scripts(doc):
             node()
         run_scripts(node)
 
-def run(filename):
+debug_node_list = []
+
+def debug_tree(tag):
+    pass
+
+def run(filename,debug=True):
     """Parse the XML file, create the environment, and ....leaving the running up to the libraries!"""
     
     #create the tree
@@ -35,10 +40,10 @@ def run(filename):
     run_scripts(doc)
 
     #call the late methods
-    call_func(doc,'late')
+    call_func_postorder(doc,'late')
     
     pdb.set_trace()
-
+    
     #create the datathread
     #datathread = Datathread()
     

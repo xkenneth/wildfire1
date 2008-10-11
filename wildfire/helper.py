@@ -25,14 +25,7 @@ def correct_indentation(script):
         
     return proper_script
 
-def call_func(node,func,child_first=True):
-    """pre order function call."""
-
-    #for all of the children
-    if child_first:
-        for sub_node in node.child_nodes:
-            call_func(sub_node,func)    
-
+def call_list(node,func):
     #if we've got the function
     if hasattr(node,func):
         try:
@@ -43,12 +36,20 @@ def call_func(node,func,child_first=True):
             #else try to call a singular function
             getattr(node,func)()
 
-    if not child_first:
-        for sub_node in node.child_nodes:
-            call_func(sub_node,func,child_first=child_first)   
-            
-    
-    
+def call_func_inorder(node,func):
+    call_list(node,func)
+    for sub_node in node.child_nodes:
+            call_func_inorder(sub_node,func)   
+        
+        
+def call_func_postorder(node,func):
+    """pre order function call."""
+
+    for sub_node in node.child_nodes:
+        call_func_postorder(sub_node,func)    
+
+    call_list(node,func)
+
     
 
 def is_junk(node):
@@ -57,13 +58,20 @@ def is_junk(node):
 
 def extend(target,source,attributes=True,ignore_duplicates=False):
     for i in range(len(source.childNodes)):
-        for j in range(len(target.childNodes)):
-            if ignore_duplicates:
-                if source.childNodes[i].tagName == target.childNodes[i].tagName:
-                    if len(source.childNodes[i].attributes.keys()) == len(target.childNodes[j].attributes.keys()):
-                        pass
-            target.childNodes.append(source.childNodes[i])
+        target.childNodes.append(source.childNodes[i])
+    
+    #for i in range(len(source.childNodes)):
+    #    for j in range(len(target.childNodes)):
+    #        if ignore_duplicates:
+    #            if source.childNodes[i].tagName == target.childNodes[i].tagName:
+    #                if len(source.childNodes[i].attributes.keys()) == len(target.childNodes[j].attributes.keys()):
+    #                    pass
+    #        target.childNodes.append(source.childNodes[i])
 
+    #i think this code is ok
+    #if we want the attributes
     if attributes:
+        #for all of the attributes in the source
         for new_attr in source.attributes.keys():
+            #add them to the target
             target.setAttribute(new_attr,source.attributes[new_attr])
