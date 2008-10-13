@@ -15,15 +15,21 @@ def assemble(tree,parent=None,data=None):
 
     #wipe out our new_node name
     new_node = None
+
+    #if tree.nodeName ==  u'canvas':
+    #    pdb.set_trace()
     
     #construct the node, instantantiate it's class and assign the tag
     new_node = construct_class(tree,parent)
     
+    #if tree.nodeName ==  u'canvas':
+    #    pdb.set_trace()
     
-
+    #if we tried to construct a junk node such as text, ignore it
     if new_node is None:
         return
 
+    
     #if the toplevel doc is none, then the first node we come across should be it
     if doc is None:
         #we want to ignore the #document tag, because it's dumb
@@ -58,7 +64,7 @@ def assemble(tree,parent=None,data=None):
     #if we've got a handler we need to attach it to the parent
     if new_node.__tag__ == u'handler':
         #get the handler name
-        handler_name = new_node.tag.attributes['on'].childNodes[0].wholeText
+        handler_name = new_node.tag.attributes['on'].nodeValue
         #if a list hasn't been setup for this handler
         if not hasattr(parent,handler_name):
             #create it
@@ -174,11 +180,11 @@ def construct_class(node,parent):
 
             #add new tags that have been added
             if hasattr(new_node,'tag'):
-                extend(node,new_node.tag)
+                node = extend(node,new_node.tag)
             new_node.tag = node
             
             #add new attributes
-                
+            
             return new_node
 
     #if you reach this point, you've gone to far

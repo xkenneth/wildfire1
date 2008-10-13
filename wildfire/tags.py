@@ -168,15 +168,14 @@ class Class(node):
     __tag__ = u'class'
     
     def _construct(self):
+
         parent_tag = None
         
         #if it's extending something other than view
         if self.tag.hasAttribute('extends'):
             #get what it's looking for
             search_tag = self.tag.attributes['extends'].nodeValue
-            #for all the tags
-            #print "TKNODE"
-            #print tags[12].tag.toxml()
+            
             for tag in tags:
                 #find a match
                 if search_tag == tag.__tag__:

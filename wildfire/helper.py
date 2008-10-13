@@ -86,7 +86,6 @@ def call_by_level(node,collection=[],depth=0,func=None,top_down=False):
             #operating bottom up
             for level in range(len(collection)):
                 for node in collection[-(level+1)]:
-                    print "!",node
                     if hasattr(node,func):
                         call_list(node,func)
         
