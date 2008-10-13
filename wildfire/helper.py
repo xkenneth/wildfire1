@@ -86,6 +86,7 @@ def call_by_level(node,collection=[],depth=0,func=None,top_down=False):
             #operating bottom up
             for level in range(len(collection)):
                 for node in collection[-(level+1)]:
+                    print "!",node
                     if hasattr(node,func):
                         call_list(node,func)
         
@@ -102,33 +103,11 @@ def extend(target,source,attributes=True,ignore_duplicates=False):
     target = target.cloneNode(target)
     source = source.cloneNode(source)
 
-    #dom_impl = xml.dom.minidom.getDOMImplementation()
     
-    #new_dom = dom_impl.createDocument(None,'temp',None)
-    
-    #pdb.set_trace()
-    
-    #new_node = new_dom.createTextNode(target.nodeName)
-    
-
-    #for child in source.childNodes:
-    #    new_node.appendChild(child)
-        
-    #for child in target.childNodes:
-    #    new_node.appendChild(child)
-    
+    #for all the child nodes in the source, append them to the target
     for i in range(len(source.childNodes)):
         target.childNodes.append(source.childNodes[i])
     
-    #for i in range(len(source.childNodes)):
-    #    for j in range(len(target.childNodes)):
-    #        if ignore_duplicates:
-    #            if source.childNodes[i].tagName == target.childNodes[i].tagName:
-    #                if len(source.childNodes[i].attributes.keys()) == len(target.childNodes[j].attributes.keys()):
-    #                    pass
-    #        target.childNodes.append(source.childNodes[i])
-
-    #i think this code is ok
     #if we want the attributes
     if attributes:
         #for all of the attributes in the source
@@ -138,12 +117,6 @@ def extend(target,source,attributes=True,ignore_duplicates=False):
                 #add them to the target
                 target.setAttribute(new_attr,source.attributes[new_attr].value)
                 
-        #for new_attr in source.attributes.keys():
-        #    #if the target doesn't already have said attribute
-        #    if not target.hasAttribute(new_attr):
-        #        #add them to the target
-        #        new_node.setAttribute(new_attr,target.attributes[new_attr].value)        
-
     return target
                 
 if __name__ == '__main__':
