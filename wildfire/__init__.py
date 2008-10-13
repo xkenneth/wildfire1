@@ -26,5 +26,5 @@ def run(filename,debug=True):
     
     #run the scripts after the nodes have been assembled
     run_scripts(doc)
-    
+
     pdb.set_trace()

@@ -29,14 +29,18 @@ def correct_indentation(script):
 def call_list(node,func):
     #if we've got the function
     if hasattr(node,func):
-        try:
+        func_list = getattr(node,func)
+        if hasattr(func_list,'__iter__'):
             #try to iterate over a list of functions
             #call the list backwards
-            for i in range(len(getattr(node,func))):
-                getattr(node,func)[-(i+1)]()
-
-        except TypeError:
+            func_list.reverse()
+            #try to iterate over a list of functions - I HAVE GOOD REASON FOR THIS
+            for f in func_list:
+                f()
+        else:
             #else try to call a singular function
+            #print getattr(node,func)
+            pdb.set_trace()
             getattr(node,func)()
 
 def call_func_inorder(node,func):

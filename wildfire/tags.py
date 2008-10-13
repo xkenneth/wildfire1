@@ -4,6 +4,7 @@ from helper import correct_indentation, is_junk, extend
 import new
 import os
 import sys
+import traceback
 from xml.dom.minidom import parse
 from xml.parsers.expat import ExpatError
 
@@ -90,13 +91,25 @@ class View(node):
 class Handler(node):
     __tag__ = u'handler'
     def __call__(self,event=None):
-        exec correct_indentation(self.tag.childNodes[0].wholeText)
+        try:
+            exec correct_indentation(self.tag.childNodes[0].wholeText)
+        except Exception, e:
+            print "An error occured in WFX embedded code!"
+            print "The handler was on='%s'" % self.tag.getAttribute('on')
+            print "It's parent was %s" % self.parent
+            print "The code was..."
+            print self.tag.childNodes[0].wholeText
+            print "Here's the traceback..."
+            traceback.print_exc(file=sys.stdout)
+            sys.exit()
+
 
 class Attr(object):
     """Class for handling the getting and setting of an attribute."""
     def __init__(self):
         #the current value of the attribute
         self.value = None
+        self.get_func = None
         # the function or functions registered to watch updates of said attribute
         #each registered function should provide an object and a lambda function with
         #the object as the first argument and the value as the second for updates
@@ -108,13 +121,22 @@ class Attr(object):
         for obj,func in self.funcs:
             func(obj,value)
             
-
     def get(self):
+        """Return the value of the attribute."""
+        #if we've registered a function to handle retrieval of the value
+        
+        if self.get_func is not None:
+            #access it
+            self.value = self.get_func[1](self.get_func[0])
+            
         return self.value
     
     def register(self,func):
         #add the function to our registered functions
         self.funcs.append(func)
+    
+    def register_get(self,func):
+        self.get_func = func
 
 
 class Attribute(node):
