@@ -264,5 +264,5 @@ class Event(node):
     def _construct(self):
         self.doc.events.append(EventMapping(self.tag.getAttribute('name'),self.tag.getAttribute('binding')))
         
-tags = [Document,Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event]
+tags = [Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event]
     
