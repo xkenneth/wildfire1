@@ -20,9 +20,9 @@ def run(filename,debug=True):
     
     #create the tree
     tree = parse(filename)
-    
-    #we need to go through the document and create all of the classes
-    doc = assemble(tree)
+    #we need to go through the document and create all of the classes 
+    #we use the first child cause we don't want to deal with the #document tag
+    doc = assemble(tree.childNodes[0])
     
     #run the scripts after the nodes have been assembled
     run_scripts(doc)

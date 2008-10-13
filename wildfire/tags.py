@@ -33,9 +33,6 @@ class node:
             #and raise a similar error if we can't find them!!!!!
             raise AttributeError('%s does not exist as a standard or WF attribute' % name)
 
-class Document(node):
-    __tag__ = u'#document'
-
 class Library(node):
     __tag__ = u'library'
 
@@ -71,7 +68,7 @@ class Library(node):
 
         #get the child nodes
         #library = library_dom.childNodes[0]
-
+        
         #create the tags
 
         #wow this is funky....?

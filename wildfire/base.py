@@ -16,30 +16,18 @@ def assemble(tree,parent=None,data=None):
     #wipe out our new_node name
     new_node = None
 
-    #if tree.nodeName ==  u'canvas':
-    #    pdb.set_trace()
-    
     #construct the node, instantantiate it's class and assign the tag
     new_node = construct_class(tree,parent)
     
-    #if tree.nodeName ==  u'canvas':
-    #    pdb.set_trace()
-    
     #if we tried to construct a junk node such as text, ignore it
-    if new_node is None:
-        return
-
+    if new_node is None: return
     
     #if the toplevel doc is none, then the first node we come across should be it
     if doc is None:
         #we want to ignore the #document tag, because it's dumb
-        if new_node.__tag__ == u'#document':
-            return assemble(tree.childNodes[0],parent=parent,data=data)
-            
-        else:
-            doc = new_node
-            doc.events = []
-            doc.import_path = os.getcwd()
+        doc = new_node
+        doc.events = []
+        doc.import_path = os.getcwd()
     else:
         #assign the doc directly
         new_node.doc = doc
