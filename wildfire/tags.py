@@ -175,16 +175,38 @@ class Class(node):
             #get what it's looking for
             search_tag = self.tag.attributes['extends'].nodeValue
             #for all the tags
+            #print "TKNODE"
+            #print tags[12].tag.toxml()
             for tag in tags:
                 #find a match
                 if search_tag == tag.__tag__:
                     parent_tag = tag
+
                     #take all of the nodes from the tag we're extending
-                    extend(self.tag,parent_tag.tag,attributes=False)
-                    #remove the extend tag so we don't recurse?
+                    #target_tag = self.tag.cloneNode(self.tag)
+                    #source_tag = parent_tag.tag.cloneNode(parent_tag.tag)
+                    
+                    
+                    #print "SOURCE"
+                    #print parent_tag.tag
+                    #print parent_tag.tag.toxml()
+                    
+                    #print "TARGET"
+                    #print self.tag
+                    #print self.tag.toxml()
+                    
+                    self.tag = extend(self.tag,parent_tag.tag,attributes=False)
+                    #pdb.set_trace()
                     self.tag.removeAttribute('extends')
+
+                    #print "COMBINED"
+                    #print self.tag
+                    #print self.tag.toxml()
+
+                    #remove the extend tag so we don't recurse?
+                    #target_tag.removeAttribute('extends')
                     #hold onto to the combined tag
-                    parent_tag.tag = self.tag
+                    #parent_tag.tag = target_tag
         else:
             #if we're just extending node
             parent_tag = node
@@ -236,16 +258,15 @@ class Replicate(node):
             #print self.data,new_data
             print "Data Changed!"
 
-class Eve(node):
+class EventMapping:
     def __init__(self,native,runtime):
         self.native = native
         self.runtime = runtime
-    
 
 class Event(node):
     __tag__ = u'event'
-    pdb.set_trace()
-                    
-
+    def _construct(self):
+        self.doc.events.append(EventMapping(self.tag.getAttribute('name'),self.tag.getAttribute('binding')))
+        
 tags = [Document,Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event]
     

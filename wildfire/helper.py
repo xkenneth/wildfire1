@@ -6,6 +6,7 @@ space_re = re.compile('\s*')
 tab_re = re.compile('t*')
 constraint_re = re.compile('\${.*}')
 
+
 def correct_indentation(script):
     #split by line, take the first empty line out
     lines = script.split('\n')
@@ -96,6 +97,26 @@ def is_junk(node):
         return True
 
 def extend(target,source,attributes=True,ignore_duplicates=False):
+
+    #create copies of the nodes
+    target = target.cloneNode(target)
+    source = source.cloneNode(source)
+
+    #dom_impl = xml.dom.minidom.getDOMImplementation()
+    
+    #new_dom = dom_impl.createDocument(None,'temp',None)
+    
+    #pdb.set_trace()
+    
+    #new_node = new_dom.createTextNode(target.nodeName)
+    
+
+    #for child in source.childNodes:
+    #    new_node.appendChild(child)
+        
+    #for child in target.childNodes:
+    #    new_node.appendChild(child)
+    
     for i in range(len(source.childNodes)):
         target.childNodes.append(source.childNodes[i])
     
@@ -117,3 +138,60 @@ def extend(target,source,attributes=True,ignore_duplicates=False):
                 #add them to the target
                 target.setAttribute(new_attr,source.attributes[new_attr].value)
                 
+        #for new_attr in source.attributes.keys():
+        #    #if the target doesn't already have said attribute
+        #    if not target.hasAttribute(new_attr):
+        #        #add them to the target
+        #        new_node.setAttribute(new_attr,target.attributes[new_attr].value)        
+
+    return target
+                
+if __name__ == '__main__':
+    import unittest
+
+    from xml.dom.minidom import parseString
+    
+    class HelperTests(unittest.TestCase):
+        def setUp(self):
+            doc1 = parseString(u'<temp/>'.encode('UTF-8'))
+            node1 = doc1.childNodes[0]
+            
+            s1 = doc1.createElementNS(None,u'class')
+            s1.setAttribute('name','test')
+            node1.appendChild(s1)
+
+            s2 = doc1.createElementNS(None,u'handler')
+            s2.appendChild(doc1.createTextNode(u"print 'Hi!'"))
+            s2.setAttribute('on','init')
+            s1.appendChild(s2)
+
+            self.node1 = s1
+            
+            doc2 = parseString(u'<class/>'.encode('UTF-8'))
+            node2 = doc2.childNodes[0]
+            node2.setAttribute('name','test2')
+            node2.setAttribute('extends','test')
+
+            s3 = doc1.createElementNS(None,u'handler')
+            s3.appendChild(doc1.createTextNode(u"print 'Hi2!'"))
+            s3.setAttribute('on','init')
+            node2.appendChild(s3)
+            
+            self.node2 = node2
+            
+        def testExtend(self):
+            #print self.node1.toprettyxml()
+            new_node1 = self.node1.cloneNode(self.node1)
+            #print self.node2.toprettyxml()
+            new_node2 = self.node2.cloneNode(self.node2)
+            
+            extend(new_node1,new_node2)
+            
+            #print new_node1.toprettyxml()
+
+            #print self.node1.toprettyxml()
+            #print self.node2.toprettyxml()
+
+            self.failIfEqual(self.node1,new_node1)
+
+    unittest.main()

@@ -28,4 +28,5 @@ def run(filename,debug=True):
     run_scripts(doc)
     
     pdb.set_trace()
+    
     print "Done."
