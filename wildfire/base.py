@@ -48,9 +48,18 @@ def assemble(tree,parent=None,data=None):
         new_node._construct()
 
     if new_node.__tag__ == u'library':
+        children = []
+
         for lnode in new_node.library_nodes:
-            assemble(lnode,parent=new_node,data=data)
-        return
+            new_lnode = assemble(lnode,parent=new_node,data=data)
+            if new_lnode:
+                children.append(new_lnode)
+
+        new_node.child_nodes = children
+
+        setattr(parent,new_node.module,new_node)
+        
+        return new_node
 
     #if we've got a handler we need to attach it to the parent
     if new_node.__tag__ == u'handler':

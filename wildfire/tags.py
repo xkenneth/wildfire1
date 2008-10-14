@@ -92,8 +92,20 @@ class Handler(node):
     __tag__ = u'handler'
     def __call__(self,event=None):
         try:
+            #defining names (so you don't have to use nasty old self)
+            this = self.parent
+            doc = self.doc
+
+            #look for toplevel library nodes and assigning them to easy to access names
+            for attribute in doc.__dict__:
+                if hasattr(doc.__dict__[attribute],'import_path'):
+                    exec("%s = doc.__dict__['%s']" % (attribute,attribute))
+                    
+            #executing the handler code
             exec correct_indentation(self.tag.childNodes[0].wholeText)
+            
         except Exception, e:
+            #detailed error messages if we blow a bolt
             print "An error occured in WFX embedded code!"
             print "The handler was on='%s'" % self.tag.getAttribute('on')
             print "It's parent was %s" % self.parent
@@ -285,6 +297,27 @@ class Event(node):
     __tag__ = u'event'
     def _construct(self):
         self.doc.events.append(EventMapping(self.tag.getAttribute('name'),self.tag.getAttribute('binding')))
+
+class Method(node):
+    __tag__ = u'method'
+    def __call__(self,*args):
+        #this method can be called
+        return self.func(*args)
+
+    def _construct(self):
+        #assemble the anonymous function
+        #we don't need to name it because that will be handled by the name/id mechanism
+        func = ('def wf_temp_func(%s):' % self.tag.getAttribute('args') ) + '\n'
+        for line in correct_indentation(self.tag.childNodes[0].wholeText).splitlines():
+            func += '    ' + line + '\n'
+        #execute the function, it's now in the scope
+        exec(func)
         
-tags = [Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event]
+        #save the function as an attribute
+        self.func = wf_temp_func
+
+        if self.tag.hasAttribute('name'):
+            setattr(self.parent,self.tag.getAttribute('name'),self)
+        
+tags = [Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event,Method]
     
