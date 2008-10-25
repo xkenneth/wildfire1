@@ -1,0 +1,17 @@
+Wildfire 0.1
+
+Welcome to the wildfire run-time!
+
+You can use this to write python GUI applications using XML with embedded python.
+
+Files included in this directory.
+
+run.py - A bootstrap to run .wfx files.
+       Usage: python run.py yourapp.wfx
+
+wildfire - Wildfire base code.
+
+Author: Kenneth Miller
+Email: xkenneth@gmail.com
+Homepage: www.openwfx.com
+	  www.xkenneth.com
