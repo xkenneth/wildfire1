@@ -339,5 +339,5 @@ class Method(node):
 
         
         
-tags = [Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event,Method]
+tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method]
     
