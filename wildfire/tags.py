@@ -1,4 +1,3 @@
-import pdb
 from copy import deepcopy
 from helper import correct_indentation, is_junk, extend
 import new
@@ -7,6 +6,8 @@ import sys
 import traceback
 from xml.dom.minidom import parse
 from xml.parsers.expat import ExpatError
+
+import urllib
 
 class node:
     #a list to hold the name of the runtime defined attributes
@@ -92,6 +93,8 @@ class Handler(node):
     __tag__ = u'handler'
     def __call__(self,event=None):
         try:
+            #event should be generic enough for various toolkits to pass event instances.
+
             #defining names (so you don't have to use nasty old self)
             this = self.parent
             doc = self.doc
@@ -178,20 +181,20 @@ class Attribute(node):
         #if self.parent.tag.hasAttribute(attr_name):
         #    setattr(self.parent,attr_name,data)
 
-class Dataset(node):
-    __tag__ = u'dataset'
-    def _construct(self):
-        self.data = None
+# class Dataset(node):
+#     __tag__ = u'dataset'
+#     def _construct(self):
+#         self.data = None
 
-        try:
-            self.data = eval(self.tag.child_nodes[0].wholeText)
-        except Exception, e:
-            print e
+#         try:
+#             self.data = eval(self.tag.child_nodes[0].wholeText)
+#         except Exception, e:
+#             print e
 
-        if self.data is None:
-            for t in self.tag.childNodes:
-                if not is_junk(t):
-                    self.data = t
+#         if self.data is None:
+#             for t in self.tag.childNodes:
+#                 if not is_junk(t):
+#                     self.data = t
             
     
         
@@ -318,6 +321,23 @@ class Method(node):
 
         if self.tag.hasAttribute('name'):
             setattr(self.parent,self.tag.getAttribute('name'),self)
+
+# class Dataset(node):
+#     __tag__ = u'dataset'
+
+#     def _construct(self):
+#         if self.tag.hasAttribute('src'):
+#             usock = urllib.urlopen(self.tag.getAttribute('src'))
+#             #t = ElementTree()
+#             dom = parse(usock)
+#             self.data = etree.fromstring(dom.toxml())
+#             pdb.set_trace()
+#             usock.close()
+            
+#         else:
+#             pdb.set_trace()
+
+        
         
 tags = [Library,Import,Wfx,View,Handler,Attribute,Dataset,Class,Script,Replicate,Event,Method]
     

@@ -1,11 +1,9 @@
 import re
-import xml.dom.minidom
 import pdb
 
 space_re = re.compile('\s*')
 tab_re = re.compile('t*')
 constraint_re = re.compile('\${.*}')
-
 
 def correct_indentation(script):
     #split by line, take the first empty line out
@@ -40,7 +38,6 @@ def call_list(node,func):
         else:
             #else try to call a singular function
             #print getattr(node,func)
-            pdb.set_trace()
             getattr(node,func)()
 
 def call_func_inorder(node,func):
@@ -97,7 +94,8 @@ def call_by_level(node,collection=[],depth=0,func=None,top_down=False):
     return collection
 
 def is_junk(node):
-    if isinstance(node,xml.dom.minidom.Text) or isinstance(node,xml.dom.minidom.Comment):
+    #if isinstance(node,xml.dom.minidom.Text) or isinstance(node,xml.dom.minidom.Comment):
+    if node.nodeName == u'#text' or node.nodeName == u'#comment' or node.nodeName == u'#cdata-section':
         return True
 
 def extend(target,source,attributes=True,ignore_duplicates=False):

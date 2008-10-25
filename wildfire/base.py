@@ -1,10 +1,7 @@
 #import all of the built in tags
-import pdb
-from copy import copy
 from helper import is_junk, extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
 from tags import tags
 import os
-import threading
 
 doc = None
 uid = 0
@@ -16,14 +13,12 @@ def assemble(tree,parent=None,data=None):
 
     #wipe out our new_node name
     new_node = None
-
+    
     #construct the node, instantantiate it's class and assign the tag
     new_node = construct_class(tree,parent)
     
     #if we tried to construct a junk node such as text, ignore it
     if new_node is None: return
-
-    print new_node
 
     #if the toplevel doc is none, then the first node we come across should be it
     if doc is None:
@@ -98,16 +93,16 @@ def assemble(tree,parent=None,data=None):
     #handling names and ids
     
     if new_node.tag.attributes:
-        if new_node.tag.hasAttribute(u'id'):
-            setattr(doc,str(new_node.tag.attributes[u'id'].value),new_node)
+        if new_node.__tag__ != 'class':
+            if new_node.tag.hasAttribute(u'id'):
+                setattr(doc,str(new_node.tag.attributes[u'id'].value),new_node)
             
-    if new_node.tag.attributes:
-        if new_node.tag.hasAttribute(u'local'):
-            setattr(parent,str(new_node.tag.attributes[u'local'].value),new_node)
+            if new_node.tag.hasAttribute(u'name'):
+                setattr(parent,str(new_node.tag.attributes[u'name'].value),new_node)
 
-    # if it's a dataset we need to stop here
-    if new_node.__tag__ == u'dataset':
-        return    
+    # if it's a dataset we need to stop here # do we?
+    #if new_node.__tag__ == u'dataset':
+    #    return new_node    
 
     #CREATING THE CHILDREN
 
@@ -120,7 +115,6 @@ def assemble(tree,parent=None,data=None):
 
     #attach the children to the node
     new_node.child_nodes = children
-    
     
     
     #handling given attributes - we need to do this after all of the attribute tags have been executed
@@ -146,8 +140,7 @@ def assemble(tree,parent=None,data=None):
                 
                 new_node.__wfattrs__[attr_key].set(attr_val)
 
-    #if we're at the top level node we need to call the init and lates
-    
+    #if we're at the top level node we need to call the init, early and late handlers
 
     #early
     
