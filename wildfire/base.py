@@ -1,5 +1,5 @@
 #import all of the built in tags
-from helper import is_junk, extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
+from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
 from tags import tags
 import os
 
@@ -59,7 +59,7 @@ def assemble(tree,parent=None,data=None):
     #if we've got a handler we need to attach it to the parent
     if new_node.__tag__ == u'handler':
         #get the handler name
-        handler_name = new_node.tag.attributes['on'].nodeValue
+        handler_name = new_node.tag.get('on')
         #if a list hasn't been setup for this handler
         if not hasattr(parent,handler_name):
             #create it
@@ -92,13 +92,12 @@ def assemble(tree,parent=None,data=None):
 
     #handling names and ids
     
-    if new_node.tag.attributes:
-        if new_node.__tag__ != 'class':
-            if new_node.tag.hasAttribute(u'id'):
-                setattr(doc,str(new_node.tag.attributes[u'id'].value),new_node)
+    if new_node.__tag__ != 'class':
+        if new_node.tag.get('id'):
+            setattr(doc,str(new_node.tag.get('id')),new_node)
             
-            if new_node.tag.hasAttribute(u'name'):
-                setattr(parent,str(new_node.tag.attributes[u'name'].value),new_node)
+        if new_node.tag.get('name'):
+            setattr(parent,str(new_node.tag.get('name')),new_node)
 
     # if it's a dataset we need to stop here # do we?
     #if new_node.__tag__ == u'dataset':
@@ -108,7 +107,7 @@ def assemble(tree,parent=None,data=None):
 
     #construct all of the children recursively
     children = []
-    for child in new_node.tag.childNodes:
+    for child in new_node.tag:
         new_child = assemble(child,new_node)
         if new_child is not None:
             children.append(new_child)
@@ -122,11 +121,11 @@ def assemble(tree,parent=None,data=None):
         #for all of the class defined attributes
         for attr_key in new_node.__wfattrs__:
 
-            if new_node.tag.hasAttribute(attr_key):                
+            if new_node.tag.get(attr_key):                
                 attr_val = None
                 try:
                     #try to see if the attribute is a python expression (this takes care of converting to int, etc)
-                    attr_val = eval(new_node.tag.attributes[attr_key].value)
+                    attr_val = eval(new_node.tag.get(attr_key))
                 except NameError:
                     pass
                 except SyntaxError:
@@ -136,7 +135,7 @@ def assemble(tree,parent=None,data=None):
 
                 #if not take it as a string
                 if attr_val is None:
-                    attr_val = new_node.tag.attributes[attr_key].value
+                    attr_val = new_node.tag.get(attr_key)
                 
                 new_node.__wfattrs__[attr_key].set(attr_val)
 
@@ -162,12 +161,10 @@ def assemble(tree,parent=None,data=None):
 def construct_class(node,parent):
     """Create a node from the xml tag."""
     
-    if is_junk(node): return
-    
     #for all of the available tag_names
     for tag in tags:
         #find the tag to create
-        if tag.__tag__ == node.nodeName:
+        if tag.__tag__ == node.tag:
             #create an instance
             new_node = tag(parent)
 

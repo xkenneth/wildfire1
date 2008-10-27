@@ -1,11 +1,10 @@
 from copy import deepcopy
-from helper import correct_indentation, is_junk, extend
+from helper import correct_indentation, extend
 import new
 import os
 import sys
 import traceback
-from xml.dom.minidom import parse
-from xml.parsers.expat import ExpatError
+from gxml import gxml
 
 import urllib
 
@@ -42,7 +41,7 @@ class Library(node):
         
         #get the module name
 
-        self.module = self.tag.attributes['library'].nodeValue
+        self.module = self.tag.get('library')
         
         path = os.path.join(self.parent.import_path,self.module)
         
@@ -60,13 +59,13 @@ class Library(node):
 
         #parse it
         try:
-            library_dom = parse(path)
-        except ExpatError, e:
+            library_dom = gxml()
+            library_dom.parse(path)
+        except Exception, e:
             print e
             raise ImportError('Could not load module %s',path)
-            sys.exit()
 
-        self.library_nodes = library_dom.childNodes[0].childNodes
+        self.library_nodes = library_dom.child_nodes
 
         #get the child nodes
         #library = library_dom.childNodes[0]
@@ -81,7 +80,7 @@ class Import(node):
     __tag__ = u'import'
     def _construct(self):
         import tags
-        tags.__dict__[self.tag.attributes['module'].nodeValue] = __import__(self.tag.attributes['module'].nodeValue)
+        tags.__dict__[self.tag.get('module')] = __import__(self.tag.get('module'))
 
 class Wfx(node):
     __tag__ = u'wfx'
@@ -105,15 +104,15 @@ class Handler(node):
                     exec("%s = doc.__dict__['%s']" % (attribute,attribute))
                     
             #executing the handler code
-            exec correct_indentation(self.tag.childNodes[0].wholeText)
+            exec correct_indentation(self.tag.text)
             
         except Exception, e:
             #detailed error messages if we blow a bolt
             print "An error occured in WFX embedded code!"
-            print "The handler was on='%s'" % self.tag.getAttribute('on')
+            print "The handler was on='%s'" % self.tag.get('on')
             print "It's parent was %s" % self.parent
             print "The code was..."
-            print self.tag.childNodes[0].wholeText
+            print self.tag.text
             print "Here's the traceback..."
             traceback.print_exc(file=sys.stdout)
             sys.exit()
@@ -161,7 +160,7 @@ class Attribute(node):
 
     def _construct(self):
         #get the attribute
-        attr_name = self.tag.attributes['name'].nodeValue
+        attr_name = self.tag.get('name')
         #self.parent.__attrs__.append(attr_name)
         #print self.parent,attr_name
         self.parent.__wfattrs__[attr_name] = Attr()
@@ -206,9 +205,9 @@ class Class(node):
         parent_tag = None
         
         #if it's extending something other than view
-        if self.tag.hasAttribute('extends'):
+        if self.tag.get('extends'):
             #get what it's looking for
-            search_tag = self.tag.attributes['extends'].nodeValue
+            search_tag = self.tag.get('extends')
             
             for tag in tags:
                 #find a match
@@ -230,7 +229,7 @@ class Class(node):
                     
                     self.tag = extend(self.tag,parent_tag.tag,attributes=False)
                     #pdb.set_trace()
-                    self.tag.removeAttribute('extends')
+                    self.tag.remove_attr('extends')
 
                     #print "COMBINED"
                     #print self.tag
@@ -248,10 +247,10 @@ class Class(node):
             raise Exception('Could not find super tag %s' % search_tag)
 
         #create a copy of the class
-        new_class = new.classobj(str(self.tag.attributes['name'].nodeValue),parent_tag.__bases__, parent_tag.__dict__.copy())
+        new_class = new.classobj(str(self.tag.get('name')),parent_tag.__bases__, parent_tag.__dict__.copy())
 
         #assign it's new __tag__
-        new_class.__tag__ = self.tag.attributes['name'].nodeValue
+        new_class.__tag__ = self.tag.get('name')
         
         #attach the DOM tag
         new_class.tag = self.tag
@@ -278,11 +277,9 @@ class Replicate(node):
         self.data_nodes = []
         self.data = eval(self.tag.attributes['over'].nodeValue)
         for data in self.data:
-            if not is_junk(data):
             #self.data_nodes.append([self.tag,data])
-                for child_node in self.tag.childNodes:
-                    if not is_junk(child_node):
-                        self.data_nodes.append([child_node,data])
+            for child_node in self.tag.childNodes:
+                self.data_nodes.append([child_node,data])
                     #new_node = assemble(child_node,self,data=data)
 
     def update(self):
@@ -299,7 +296,7 @@ class EventMapping:
 class Event(node):
     __tag__ = u'event'
     def _construct(self):
-        self.doc.events.append(EventMapping(self.tag.getAttribute('name'),self.tag.getAttribute('binding')))
+        self.doc.events.append(EventMapping(self.tag.get('name'),self.tag.get('binding')))
 
 class Method(node):
     __tag__ = u'method'
@@ -310,8 +307,8 @@ class Method(node):
     def _construct(self):
         #assemble the anonymous function
         #we don't need to name it because that will be handled by the name/id mechanism
-        func = ('def wf_temp_func(%s):' % self.tag.getAttribute('args') ) + '\n'
-        for line in correct_indentation(self.tag.childNodes[0].wholeText).splitlines():
+        func = ('def wf_temp_func(%s):' % self.tag.get('args') ) + '\n'
+        for line in correct_indentation(self.tag.text).splitlines():
             func += '    ' + line + '\n'
         #execute the function, it's now in the scope
         exec(func)
@@ -319,8 +316,8 @@ class Method(node):
         #save the function as an attribute
         self.func = wf_temp_func
 
-        if self.tag.hasAttribute('name'):
-            setattr(self.parent,self.tag.getAttribute('name'),self)
+        if self.tag.get('name'):
+            setattr(self.parent,self.tag.get('name'),self)
 
 # class Dataset(node):
 #     __tag__ = u'dataset'

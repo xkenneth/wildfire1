@@ -1,6 +1,8 @@
 import re
 import pdb
 
+from gxml import gxml, clone
+
 space_re = re.compile('\s*')
 tab_re = re.compile('t*')
 constraint_re = re.compile('\${.*}')
@@ -93,37 +95,37 @@ def call_by_level(node,collection=[],depth=0,func=None,top_down=False):
     #we need to return the collection so the function will work recursively
     return collection
 
-def is_junk(node):
-    #if isinstance(node,xml.dom.minidom.Text) or isinstance(node,xml.dom.minidom.Comment):
-    if node.nodeName == u'#text' or node.nodeName == u'#comment' or node.nodeName == u'#cdata-section':
-        return True
+#def is_junk(node):
+#    #if isinstance(node,xml.dom.minidom.Text) or isinstance(node,xml.dom.minidom.Comment):
+#    if node.tag == u'#text' or node.tag == u'#comment' or node.tag == u'#cdata-section':
+#        return True
 
 def extend(target,source,attributes=True,ignore_duplicates=False):
 
     #create copies of the nodes
-    target = target.cloneNode(target)
-    source = source.cloneNode(source)
+    target = clone(target)
+    source = clone(source)
 
     
     #for all the child nodes in the source, append them to the target
-    for i in range(len(source.childNodes)):
-        target.childNodes.append(source.childNodes[i])
+    for i in source:
+        target.append(i)
     
     #if we want the attributes
     if attributes:
         #for all of the attributes in the source
-        for new_attr in source.attributes.keys():
+        for new_attr in source.keys():
             #if the target doesn't already have said attribute
-            if not target.hasAttribute(new_attr):
+            if not target.get(new_attr):
                 #add them to the target
-                target.setAttribute(new_attr,source.attributes[new_attr].value)
+                target.set(new_attr,source.get(new_attr))
                 
     return target
                 
 if __name__ == '__main__':
     import unittest
 
-    from xml.dom.minidom import parseString
+    #from xml.dom.minidom import parseString
     
     class HelperTests(unittest.TestCase):
         def setUp(self):

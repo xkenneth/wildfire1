@@ -1,5 +1,7 @@
 import sys
 from wildfire import run
-from xml.dom.minidom import parse
+from gxml import gxml
 
-run(parse(sys.argv[1]))
+t = gxml()
+
+run(t.parse(sys.argv[1]))
