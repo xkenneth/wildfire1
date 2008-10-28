@@ -1,7 +1,7 @@
 #import all of the built in tags
 from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
 from tags import tags
-import os
+import gpath
 
 doc = None
 uid = 0
@@ -25,7 +25,7 @@ def assemble(tree,parent=None,data=None):
         #we want to ignore the #document tag, because it's dumb
         doc = new_node
         doc.events = []
-        doc.import_path = os.getcwd()
+        doc.import_path = './' #gpath.getcwd()
     else:
         #assign the doc directly
         new_node.doc = doc

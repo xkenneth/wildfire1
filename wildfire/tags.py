@@ -1,12 +1,10 @@
-from copy import deepcopy
 from helper import correct_indentation, extend
-import new
-import os
 import sys
-import traceback
-from gxml import gxml
 
-import urllib
+from gxml import gxml
+import gpath
+
+#import urllib
 
 class node:
     #a list to hold the name of the runtime defined attributes
@@ -43,17 +41,17 @@ class Library(node):
 
         self.module = self.tag.get('library')
         
-        path = os.path.join(self.parent.import_path,self.module)
+        path = gpath.join(self.parent.import_path,self.module)
         
-        if os.path.isdir(path):
+        if gpath.isdir(path):
             self.import_path = path
-            path = os.path.join(path,self.module+'.wfx')
+            path = gpath.join(path,self.module+'.wfx')
         else:
-            path = os.path.join(self.parent.import_path,self.module+'.wfx')
+            path = gpath.join(self.parent.import_path,self.module+'.wfx')
             self.import_path = self.parent.import_path
         
         #make sure it's good
-        if not os.path.isfile(path):
+        if not gpath.isfile(path):
             raise IOError('%s is not a file!' % path)
         
 
@@ -66,15 +64,6 @@ class Library(node):
             raise ImportError('Could not load module %s',path)
 
         self.library_nodes = library_dom.child_nodes
-
-        #get the child nodes
-        #library = library_dom.childNodes[0]
-        
-        #create the tags
-
-        #wow this is funky....?
-        #for i in range(len(library.childNodes)):
-        #    self.tag.childNodes.append(library.childNodes[i])
 
 class Import(node):
     __tag__ = u'import'
@@ -113,9 +102,13 @@ class Handler(node):
             print "It's parent was %s" % self.parent
             print "The code was..."
             print self.tag.text
-            print "Here's the traceback..."
-            traceback.print_exc(file=sys.stdout)
-            sys.exit()
+            try:
+                import traceback
+                print "Here's the traceback..."
+                traceback.print_exc(file=sys.stdout)
+                sys.exit()
+            except ImportError:
+                sys.exit()
 
 
 class Attr(object):
@@ -247,7 +240,9 @@ class Class(node):
             raise Exception('Could not find super tag %s' % search_tag)
 
         #create a copy of the class
-        new_class = new.classobj(str(self.tag.get('name')),parent_tag.__bases__, parent_tag.__dict__.copy())
+        #new_class = new.classobj(str(self.tag.get('name')),parent_tag.__bases__, parent_tag.__dict__.copy())
+        exec( 'class %s(parent_tag): pass' % self.tag.get('name') )
+        exec( 'new_class = %s' % self.tag.get('name') )
 
         #assign it's new __tag__
         new_class.__tag__ = self.tag.get('name')
@@ -264,26 +259,34 @@ class Class(node):
         #else just add it to our list of tags
         tags.append(new_class)
         
-class Script(Handler):
+class Script(node):
     __tag__ = u'script'
-    #def _construct(self):
+    def _construct(self):
         #this should probably use an intelligent search function
-    #    exec correct_indentation(self.tag.childNodes[0].wholeText)
+        this = self
+        doc = self.doc
+
+        #look for toplevel library nodes and assigning them to easy to access names
+        for attribute in doc.__dict__:
+            if hasattr(doc.__dict__[attribute],'import_path'):
+                exec("%s = doc.__dict__['%s']" % (attribute,attribute))
+            
+        exec correct_indentation(self.tag.text)
 
 class Replicate(node):
     __tag__ = u'replicate'
     
     def _construct(self):
         self.data_nodes = []
-        self.data = eval(self.tag.attributes['over'].nodeValue)
+        self.data = eval(self.tag.get('over'))
         for data in self.data:
             #self.data_nodes.append([self.tag,data])
-            for child_node in self.tag.childNodes:
+            for child_node in self.tag:
                 self.data_nodes.append([child_node,data])
                     #new_node = assemble(child_node,self,data=data)
 
     def update(self):
-        new_data = eval(self.tag.attributes['over'].nodeValue)
+        new_data = eval(self.tag.get('over'))
         if self.data != new_data:
             #print self.data,new_data
             print "Data Changed!"
@@ -307,7 +310,10 @@ class Method(node):
     def _construct(self):
         #assemble the anonymous function
         #we don't need to name it because that will be handled by the name/id mechanism
-        func = ('def wf_temp_func(%s):' % self.tag.get('args') ) + '\n'
+        args = self.tag.get('args')
+        if args is None:
+            args = ''
+        func = ('def wf_temp_func(%s):' % args ) + '\n'
         for line in correct_indentation(self.tag.text).splitlines():
             func += '    ' + line + '\n'
         #execute the function, it's now in the scope

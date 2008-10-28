@@ -1,7 +1,6 @@
 import re
-import pdb
 
-from gxml import gxml, clone
+from gxml import gxml, clone, Element
 
 space_re = re.compile('\s*')
 tab_re = re.compile('t*')
@@ -129,37 +128,37 @@ if __name__ == '__main__':
     
     class HelperTests(unittest.TestCase):
         def setUp(self):
-            doc1 = parseString(u'<temp/>'.encode('UTF-8'))
-            node1 = doc1.childNodes[0]
+            t = gxml()
+            t.from_string('<temp/>')
             
-            s1 = doc1.createElementNS(None,u'class')
-            s1.setAttribute('name','test')
-            node1.appendChild(s1)
+            s1 = Element('class')
+            s1.set('name','test')
+            t.append(s1)
 
-            s2 = doc1.createElementNS(None,u'handler')
-            s2.appendChild(doc1.createTextNode(u"print 'Hi!'"))
-            s2.setAttribute('on','init')
-            s1.appendChild(s2)
+            s2 = Element('handler')
+            s2.text = "print 'Hi!'"
+            s2.set('on','init')
+            s1.append(s2)
 
             self.node1 = s1
             
-            doc2 = parseString(u'<class/>'.encode('UTF-8'))
-            node2 = doc2.childNodes[0]
-            node2.setAttribute('name','test2')
-            node2.setAttribute('extends','test')
+            doc2 = Element('class')
+            doc2.set('name','test2')
+            doc2.set('extends','test')
 
-            s3 = doc1.createElementNS(None,u'handler')
-            s3.appendChild(doc1.createTextNode(u"print 'Hi2!'"))
-            s3.setAttribute('on','init')
-            node2.appendChild(s3)
+            s3 = Element('handler')
+            s3.text = 'print Hi2!'
+            s3.set('on','init')
+
+            doc2.append(s3)
             
-            self.node2 = node2
+            self.node2 = doc2
             
         def testExtend(self):
             #print self.node1.toprettyxml()
-            new_node1 = self.node1.cloneNode(self.node1)
+            new_node1 = clone(self.node1)
             #print self.node2.toprettyxml()
-            new_node2 = self.node2.cloneNode(self.node2)
+            new_node2 = clone(self.node2)
             
             extend(new_node1,new_node2)
             
