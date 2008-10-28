@@ -74,11 +74,6 @@ def assemble(tree,parent=None,data=None):
         getattr(parent,handler_name).append(new_node)
 
 
-    #if it's a class we need to stop here
-    if new_node.__tag__ == u'class':
-        return
-
-    
     if new_node.__tag__ == u'replicate':
         #if it's a replicate node, let's assemble it's child nodes
         children = []
@@ -90,20 +85,24 @@ def assemble(tree,parent=None,data=None):
         #if it's a replicate tag we also need to stop here
         return new_node
 
-    #handling names and ids
-    
-    if new_node.__tag__ != 'class':
+    #need to stop here if we've got an attribute
+    if new_node.__tag__ == 'attribute':
+        return new_node
+
+    if new_node._name:
+        #handling names and ids
         if new_node.tag.get('id'):
+            #attaching the node to it's parent as the given id
             setattr(doc,str(new_node.tag.get('id')),new_node)
             
         if new_node.tag.get('name'):
+            #attaching the node to it's parent as the given name
             setattr(parent,str(new_node.tag.get('name')),new_node)
 
-    # if it's a dataset we need to stop here # do we?
-    #if new_node.__tag__ == u'dataset':
-    #    return new_node    
 
-    #CREATING THE CHILDREN
+    #if we don't want to instantiate a node's children, we need to stop now
+    if not new_node._instantiate_children:
+        return new_node
 
     #construct all of the children recursively
     children = []
@@ -178,4 +177,4 @@ def construct_class(node,parent):
             return new_node
 
     #if you reach this point, you've gone to far
-    raise TypeError('Tag ( %s ) not found!' % node.nodeName)
+    raise TypeError('Tag ( %s ) not found!' % node.tag)

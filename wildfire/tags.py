@@ -7,10 +7,16 @@ import gpath
 #import urllib
 
 class node:
+    """The base class for all other nodes."""
+    #by default
+    _name = True
+    _instantiate_children = True
+
     #a list to hold the name of the runtime defined attributes
     def __init__(self,parent):
         self.__dict__['__wfattrs__'] = {}
         self.parent = parent
+        self.child_nodes = []
 
     def __repr__(self):
         return "<"+self.__tag__+">"
@@ -123,8 +129,11 @@ class Attr(object):
         self.funcs = []
 
     def set(self,value):
+        print "Set!", value
+
         self.value = value
         
+        #update the registered attributes
         for obj,func in self.funcs:
             func(obj,value)
             
@@ -134,7 +143,9 @@ class Attr(object):
         
         if self.get_func is not None:
             #access it
+            print "!", self.value
             self.value = self.get_func[1](self.get_func[0])
+        print "?", self.value
             
         return self.value
     
@@ -150,6 +161,9 @@ class Attribute(node):
     """The actual attribute tag."""
 
     __tag__ = u'attribute'
+
+    _name = False
+    _instantiate_children = False
 
     def _construct(self):
         #get the attribute
@@ -192,6 +206,9 @@ class Attribute(node):
         
 class Class(node):
     __tag__ = u'class'
+
+    _name = False
+    _instantiate_children = False
     
     def _construct(self):
 

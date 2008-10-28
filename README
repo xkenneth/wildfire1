@@ -1,4 +1,4 @@
-Wildfire 0.1
+Wildfire 0.2
 
 Welcome to the wildfire run-time!
 
@@ -15,3 +15,7 @@ Author: Kenneth Miller
 Email: xkenneth@gmail.com
 Homepage: www.openwfx.com
 	  www.xkenneth.com
+
+### CHANGELOG ###
+0.2 Migrated wildfire to gxml.
+0.1 Code base.
