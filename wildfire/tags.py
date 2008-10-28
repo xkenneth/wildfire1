@@ -1,4 +1,5 @@
 from helper import correct_indentation, extend
+from constraints import Attr
 import sys
 
 from gxml import gxml
@@ -115,46 +116,6 @@ class Handler(node):
                 sys.exit()
             except ImportError:
                 sys.exit()
-
-
-class Attr(object):
-    """Class for handling the getting and setting of an attribute."""
-    def __init__(self):
-        #the current value of the attribute
-        self.value = None
-        self.get_func = None
-        # the function or functions registered to watch updates of said attribute
-        #each registered function should provide an object and a lambda function with
-        #the object as the first argument and the value as the second for updates
-        self.funcs = []
-
-    def set(self,value):
-        print "Set!", value
-
-        self.value = value
-        
-        #update the registered attributes
-        for obj,func in self.funcs:
-            func(obj,value)
-            
-    def get(self):
-        """Return the value of the attribute."""
-        #if we've registered a function to handle retrieval of the value
-        
-        if self.get_func is not None:
-            #access it
-            print "!", self.value
-            self.value = self.get_func[1](self.get_func[0])
-        print "?", self.value
-            
-        return self.value
-    
-    def register(self,func):
-        #add the function to our registered functions
-        self.funcs.append(func)
-    
-    def register_get(self,func):
-        self.get_func = func
 
 
 class Attribute(node):
