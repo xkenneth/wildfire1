@@ -1,10 +1,11 @@
 #import all of the built in tags
-from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level
+from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, get_uid, uid
+from constraints import Attr, bind
 from tags import tags
 import gpath
+import pdb
 
 doc = None
-uid = 0
 
 def assemble(tree,parent=None,data=None):
     """Properly setup a tree of nodes."""
@@ -31,8 +32,7 @@ def assemble(tree,parent=None,data=None):
         new_node.doc = doc
         
     #assign a global UID to each node (useful for debug mostly)
-    new_node.uid = uid
-    uid += 1
+    new_node.uid = get_uid()
         
     #assign the data
     if data is not None:
@@ -125,13 +125,25 @@ def assemble(tree,parent=None,data=None):
                 try:
                     #try to see if the attribute is a python expression (this takes care of converting to int, etc)
                     attr_val = eval(new_node.tag.get(attr_key))
-                except NameError:
-                    pass
-                except SyntaxError:
-                    pass
-                    
-                #put some tests in here for checking for constraints
 
+                except SyntaxError:
+                    #if that's the case then we need to setup an attribute binding! (constraint)
+                    #regex it
+                    constraint = is_constraint(new_node.tag.get(attr_key))
+                    #got the constraint 
+                    if constraint:
+                        #turn it into a name
+                        try:
+                            #it's either global
+                            val = eval(constraint)
+                        except NameError:
+                            #or local
+                            val = eval('parent.%s' % constraint)
+                            #or a problem...
+
+                        if isinstance(val,Attr):
+                            bind(new_node.__wfattrs__[attr_key], val)
+                    
                 #if not take it as a string
                 if attr_val is None:
                     attr_val = new_node.tag.get(attr_key)

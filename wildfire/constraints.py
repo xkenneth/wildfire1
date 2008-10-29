@@ -18,12 +18,16 @@ def bind(attribute, target, func=None):
 
         #register the target in the list of registered attributes
         attribute.registered_to = target
+
+def bind_set(attribute, target, func):
+    attribute.register_set(target,func)
     
 
 class Attr(object):
     """Class for handling the getting and setting of an attribute."""
-    def __init__(self):
+    def __init__(self,uid):
         #the current value of the attribute
+        self.uid = uid
         self.value = None
 
         #the function used retrieving an updated value
@@ -52,7 +56,7 @@ class Attr(object):
 
         #set the value
         if self.set_func is not None:
-            self.set_func(self.set_context)
+            self.set_func(self.set_context,self.value)
 
         #update the registered attributes
         for uid in self.registered_attributes:
@@ -89,13 +93,11 @@ if __name__ == '__main__':
     class ConstraintTest(unittest.TestCase):
         def setUp(self):
             uid = 0
-            self.master = Attr()
-            self.master.uid = uid
+            self.master = Attr(uid)
             uid += 1
             slaves = []
             for i in range(4):
-                slaves.append(Attr())
-                slaves[i].uid = uid
+                slaves.append(Attr(uid))
                 uid += 1
             self.slaves = slaves
         

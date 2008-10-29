@@ -1,5 +1,5 @@
-from helper import correct_indentation, extend
-from constraints import Attr, bind
+from helper import correct_indentation, extend, get_uid, uid
+from constraints import Attr, bind, bind_set
 import sys
 
 from gxml import gxml
@@ -34,10 +34,15 @@ class node:
         #dangerous overring this i imagine
         #so we look through my custom attributes
         try:
-            return self.__wfattrs__[name].get()
+            return self.__wfattrs__[name]
         except KeyError:
             #and raise a similar error if we can't find them!!!!!
             raise AttributeError('%s does not exist as a standard or WF attribute' % name)
+
+    def get_siblings(self):
+        return self.parent.child_nodes
+
+    siblings = property(get_siblings)
 
 class Library(node):
     __tag__ = u'library'
@@ -131,7 +136,7 @@ class Attribute(node):
         attr_name = self.tag.get('name')
         #self.parent.__attrs__.append(attr_name)
         #print self.parent,attr_name
-        self.parent.__wfattrs__[attr_name] = Attr()
+        self.parent.__wfattrs__[attr_name] = Attr(get_uid())
         #setattr(self.parent,attr_name,property(new_attr.default_set,new_attr.default_get))
         
         #if it's a constraint

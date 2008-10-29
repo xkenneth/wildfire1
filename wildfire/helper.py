@@ -6,6 +6,15 @@ space_re = re.compile('\s*')
 tab_re = re.compile('t*')
 constraint_re = re.compile('\${.*}')
 
+uid = 0
+
+def get_uid():
+    global uid
+    last = uid
+    uid += 1
+    print last
+    return last
+
 def correct_indentation(script):
     #split by line, take the first empty line out
     lines = script.split('\n')
@@ -120,6 +129,12 @@ def extend(target,source,attributes=True,ignore_duplicates=False):
                 target.set(new_attr,source.get(new_attr))
                 
     return target
+
+def is_constraint(str):
+    match = constraint_re.match(str)
+    if match:
+        #if we've got a group, slice and return
+        return match.group()[2:-1]
                 
 if __name__ == '__main__':
     import unittest
