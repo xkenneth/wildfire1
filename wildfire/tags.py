@@ -1,5 +1,5 @@
 from helper import correct_indentation, extend
-from constraints import Attr
+from constraints import Attr, bind
 import sys
 
 from gxml import gxml
@@ -321,4 +321,3 @@ class Method(node):
         
         
 tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method]
-    
