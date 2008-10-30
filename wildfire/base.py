@@ -57,23 +57,6 @@ def assemble(tree,parent=None,data=None):
         return new_node
 
     #if we've got a handler we need to attach it to the parent
-    if new_node.__tag__ == u'handler':
-        #get the handler name
-        handler_name = new_node.tag.get('on')
-        #if a list hasn't been setup for this handler
-        if not hasattr(parent,handler_name):
-            #create it
-            setattr(parent,handler_name,[])
-        else:
-            #if it is there, and it's not a list
-            if not isinstance(getattr(parent,handler_name),list):
-                #make it into a list with the first item as the old value
-                setattr(parent,handler_name,[getattr(parent,handler_name)])
-            
-        #append the new handler
-        getattr(parent,handler_name).append(new_node)
-
-
     if new_node.__tag__ == u'replicate':
         #if it's a replicate node, let's assemble it's child nodes
         children = []

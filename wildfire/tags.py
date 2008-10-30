@@ -91,6 +91,23 @@ class View(node):
 
 class Handler(node):
     __tag__ = u'handler'
+
+    def _construct(self):
+        #get the handler name
+        handler_name = self.tag.get('on')
+        #if a list hasn't been setup for this handler
+        if not hasattr(self.parent,handler_name):
+            #create it
+            setattr(self.parent,handler_name,[])
+        else:
+            #if it is there, and it's not a list
+            if not isinstance(getattr(self.parent,handler_name),list):
+                #make it into a list with the first item as the old value
+                setattr(self.parent,handler_name,[getattr(self.parent,handler_name)])
+            
+        #append the new handler
+        getattr(self.parent,handler_name).append(self)
+        
     def __call__(self,event=None):
         try:
             #event should be generic enough for various toolkits to pass event instances.
