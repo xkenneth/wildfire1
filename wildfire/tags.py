@@ -14,10 +14,13 @@ class node:
     _instantiate_children = True
 
     #a list to hold the name of the runtime defined attributes
-    def __init__(self,parent):
+    def __init__(self,parent,doc):
         self.__dict__['__wfattrs__'] = {}
         self.parent = parent
         self.child_nodes = []
+        print self
+        self.uid = get_uid()
+        self.doc = doc
 
     def __repr__(self):
         return "<"+self.__tag__+">"

@@ -1,5 +1,5 @@
 #import all of the built in tags
-from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, get_uid, uid
+from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, run_scripts
 from constraints import Attr, bind
 from tags import tags
 import gpath
@@ -21,18 +21,15 @@ def assemble(tree,parent=None,data=None):
     #if we tried to construct a junk node such as text, ignore it
     if new_node is None: return
 
-    #if the toplevel doc is none, then the first node we come across should be it
+    #if the toplevel doc is none, then the first node we EVER come across should be it
     if doc is None:
         #we want to ignore the #document tag, because it's dumb
         doc = new_node
         doc.events = []
-        doc.import_path = './' #gpath.getcwd()
+        doc.import_path = './'
     else:
-        #assign the doc directly
+        #assign the doc for reference
         new_node.doc = doc
-        
-    #assign a global UID to each node (useful for debug mostly)
-    new_node.uid = get_uid()
         
     #assign the data
     if data is not None:
@@ -137,9 +134,12 @@ def assemble(tree,parent=None,data=None):
     #init
     #if this is the top-most node as called by assemble
     if not parent:
+        #call the defined constructs, inits, and lates in the proper order
         call_func_inorder(new_node,'construct')
         call_func_postorder(new_node,'init')
         #call_func_postorder(new_node,'late')
+        #run the script tags
+        run_scripts(new_node)
         call_by_level(new_node,func='late')
 
     #late
@@ -157,7 +157,7 @@ def construct_class(node,parent):
         #find the tag to create
         if tag.__tag__ == node.tag:
             #create an instance
-            new_node = tag(parent)
+            new_node = tag(parent,doc)
 
             #add new tags that have been added
             if hasattr(new_node,'tag'):

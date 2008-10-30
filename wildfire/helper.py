@@ -15,6 +15,12 @@ def get_uid():
     print last
     return last
 
+def run_scripts(doc):
+    for node in doc.child_nodes:
+        if node.__tag__ == u'script':
+            node()
+        run_scripts(node)
+
 def correct_indentation(script):
     #split by line, take the first empty line out
     lines = script.split('\n')
