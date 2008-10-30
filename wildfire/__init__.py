@@ -17,8 +17,8 @@ def run(file,debug=True):
 
     doc = assemble(dom)
 
-    import pdb
-    pdb.set_trace()
+    #import pdb
+    #pdb.set_trace()
     
     #run the scripts after the nodes have been assembled
     #run_scripts(doc)
