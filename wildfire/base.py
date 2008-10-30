@@ -68,10 +68,7 @@ def assemble(tree,parent=None,data=None):
         #if it's a replicate tag we also need to stop here
         return new_node
 
-    #need to stop here if we've got an attribute
-    if new_node.__tag__ == 'attribute':
-        return new_node
-
+    #if the tag class accepts names, ie, classes don't accept names
     if new_node._name:
         #handling names and ids
         if new_node.tag.get('id'):
