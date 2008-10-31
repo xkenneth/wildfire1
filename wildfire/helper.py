@@ -12,7 +12,6 @@ def get_uid():
     global uid
     last = uid
     uid += 1
-    print last
     return last
 
 def run_scripts(doc):

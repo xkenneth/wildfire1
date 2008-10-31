@@ -35,10 +35,6 @@ def assemble(tree,parent=None,data=None):
     if data is not None:
         new_node.data = data
 
-    # call the native construct
-    if hasattr(new_node,'_construct'):
-        new_node._construct()
-
     if new_node.__tag__ == u'library':
         children = []
 
@@ -102,6 +98,8 @@ def assemble(tree,parent=None,data=None):
                 try:
                     #try to see if the attribute is a python expression (this takes care of converting to int, etc)
                     attr_val = eval(new_node.tag.get(attr_key))
+                except NameError:
+                    pass
 
                 except SyntaxError:
                     #if that's the case then we need to setup an attribute binding! (constraint)
@@ -156,13 +154,13 @@ def construct_class(node,parent):
     for tag in tags:
         #find the tag to create
         if tag.__tag__ == node.tag:
-            #create an instance
-            new_node = tag(parent,doc)
-
+            
             #add new tags that have been added
-            if hasattr(new_node,'tag'):
-                node = extend(node,new_node.tag)
-            new_node.tag = node
+            if hasattr(tag,'tag'):
+                node = extend(node,tag.tag)
+
+            #create an instance
+            new_node = tag(parent,doc,node)
             
             #add new attributes
             

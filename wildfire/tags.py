@@ -1,5 +1,6 @@
 from helper import correct_indentation, extend, get_uid, uid
 from constraints import Attr, bind, bind_set
+
 import sys
 
 from gxml import gxml
@@ -14,13 +15,16 @@ class node:
     _instantiate_children = True
 
     #a list to hold the name of the runtime defined attributes
-    def __init__(self,parent,doc):
+    def __init__(self,parent,doc,tag=None):
         self.__dict__['__wfattrs__'] = {}
         self.parent = parent
         self.child_nodes = []
-        print self
         self.uid = get_uid()
         self.doc = doc
+        self.tag = tag
+
+        if hasattr(self,'_construct'):
+            self._construct()
 
     def __repr__(self):
         return "<"+self.__tag__+">"
@@ -40,7 +44,7 @@ class node:
             return self.__wfattrs__[name]
         except KeyError:
             #and raise a similar error if we can't find them!!!!!
-            raise AttributeError('%s does not exist as a standard or WF attribute' % name)
+            raise AttributeError("'%s' does not exist as a standard or WF attribute" % name)
 
     def get_siblings(self):
         return self.parent.child_nodes
@@ -92,31 +96,19 @@ class Wfx(node):
 class View(node):
     __tag__ = u'view'
 
-class Handler(node):
-    __tag__ = u'handler'
+class Script(node):
+    __tag__ = u'script'
 
-    def _construct(self):
-        #get the handler name
-        handler_name = self.tag.get('on')
-        #if a list hasn't been setup for this handler
-        if not hasattr(self.parent,handler_name):
-            #create it
-            setattr(self.parent,handler_name,[])
-        else:
-            #if it is there, and it's not a list
-            if not isinstance(getattr(self.parent,handler_name),list):
-                #make it into a list with the first item as the old value
-                setattr(self.parent,handler_name,[getattr(self.parent,handler_name)])
-            
-        #append the new handler
-        getattr(self.parent,handler_name).append(self)
-        
     def __call__(self,event=None):
         try:
             #event should be generic enough for various toolkits to pass event instances.
 
             #defining names (so you don't have to use nasty old self)
-            this = self.parent
+            if self.__tag__ == u'handler':
+                this = self.parent
+            else:
+                this = self
+
             doc = self.doc
 
             #look for toplevel library nodes and assigning them to easy to access names
@@ -141,6 +133,27 @@ class Handler(node):
                 sys.exit()
             except ImportError:
                 sys.exit()
+
+class Handler(Script):
+    __tag__ = u'handler'
+
+    def _construct(self):
+        #get the handler name
+        handler_name = self.tag.get('on')
+        #if a list hasn't been setup for this handler
+        if not hasattr(self.parent,handler_name):
+            #create it
+            setattr(self.parent,handler_name,[])
+        else:
+            #if it is there, and it's not a list
+            if not isinstance(getattr(self.parent,handler_name),list):
+                #make it into a list with the first item as the old value
+                setattr(self.parent,handler_name,[getattr(self.parent,handler_name)])
+            
+        #append the new handler
+        getattr(self.parent,handler_name).append(self)
+        
+
 
 
 class Attribute(node):
@@ -262,19 +275,7 @@ class Class(node):
         #else just add it to our list of tags
         tags.append(new_class)
         
-class Script(node):
-    __tag__ = u'script'
-    def _construct(self):
-        #this should probably use an intelligent search function
-        this = self
-        doc = self.doc
 
-        #look for toplevel library nodes and assigning them to easy to access names
-        for attribute in doc.__dict__:
-            if hasattr(doc.__dict__[attribute],'import_path'):
-                exec("%s = doc.__dict__['%s']" % (attribute,attribute))
-            
-        exec correct_indentation(self.tag.text)
 
 class Replicate(node):
     __tag__ = u'replicate'
@@ -328,20 +329,19 @@ class Method(node):
         if self.tag.get('name'):
             setattr(self.parent,self.tag.get('name'),self)
 
-# class Dataset(node):
-#     __tag__ = u'dataset'
+class Dataset(node):
+    __tag__ = u'dataset'
 
-#     def _construct(self):
-#         if self.tag.hasAttribute('src'):
-#             usock = urllib.urlopen(self.tag.getAttribute('src'))
-#             #t = ElementTree()
-#             dom = parse(usock)
-#             self.data = etree.fromstring(dom.toxml())
-#             pdb.set_trace()
-#             usock.close()
-            
-#         else:
-#             pdb.set_trace()
+    def _construct(self):
+        if self.tag.hasAttribute('src'):
+            usock = urllib.urlopen(self.tag.getAttribute('src'))
+            #t = ElementTree()
+            dom = parse(usock)
+            self.data = etree.fromstring(dom.toxml())
+            pdb.set_trace()
+            usock.close()
+        else:
+            pdb.set_trace()
 
         
         
