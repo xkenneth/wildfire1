@@ -1,6 +1,6 @@
 #import all of the built in tags
 from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, run_scripts
-from constraints import Attr, bind
+from constraints import bind
 from tags import tags
 import gpath
 import pdb
@@ -104,26 +104,28 @@ def assemble(tree,parent=None,data=None):
                 except SyntaxError:
                     #if that's the case then we need to setup an attribute binding! (constraint)
                     #regex it
-                    constraint = is_constraint(new_node.tag.get(attr_key))
+                    pass
+                    #constraint = is_constraint(new_node.tag.get(attr_key))
                     #got the constraint 
-                    if constraint:
+                    #if constraint:
                         #turn it into a name
-                        try:
+                    #    try:
                             #it's either global
-                            val = eval(constraint)
-                        except NameError:
+                    #        val = eval(constraint)
+                    #    except NameError:
                             #or local
-                            val = eval('parent.%s' % constraint)
+                    #        val = eval('parent.%s' % constraint)
                             #or a problem...
 
-                        if isinstance(val,Attr):
-                            bind(new_node.__wfattrs__[attr_key], val)
+                    #    if isinstance(val,Attr):
+                    #        bind(new_node.__wfattrs__[attr_key], val)
                     
                 #if not take it as a string
                 if attr_val is None:
                     attr_val = new_node.tag.get(attr_key)
                 
-                new_node.__wfattrs__[attr_key].set(attr_val)
+                #set the value of the attribute
+                setattr(new_node,attr_key,attr_val)
 
     #if we're at the top level node we need to call the init, early and late handlers
 

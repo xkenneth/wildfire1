@@ -1,5 +1,5 @@
 from helper import correct_indentation, extend, get_uid, uid
-from constraints import Attr, bind, bind_set
+from constraints import bind
 
 import sys
 
@@ -14,15 +14,36 @@ class node:
     _name = True
     _instantiate_children = True
 
-    #a list to hold the name of the runtime defined attributes
     def __init__(self,parent,doc,tag=None):
+
+        #contains a list of attributes defined by <attribute> tags
         self.__dict__['__wfattrs__'] = {}
+
+        #the parent tag of this tag
         self.parent = parent
+
+        #the children of this tag
         self.child_nodes = []
+        
+        #this tags uid
         self.uid = get_uid()
+
+        #a linking to the doc
         self.doc = doc
+
+        #the actual tag (xml) from which this class tag as instantiated from
         self.tag = tag
 
+        #bindings are constraints where we set the value
+        self.__bindings__ = {}
+
+        #some attribute values need to be retrieved
+        self.__getters__ = {}
+        
+        #constraints are simply notifactions of an attribute to re-evaluate itself
+        self.__constraints__ = {}
+
+        #if we have a native construct, call it
         if hasattr(self,'_construct'):
             self._construct()
 
@@ -30,21 +51,40 @@ class node:
         return "<"+self.__tag__+">"
 
     def __setattr__(self,name,value):
-        try:
-            #see if it's a wf specific attribute
-            self.__wfattrs__[name].set(value)
-        except KeyError:
-            #if not set it in the normal method
+        
+        if value in self.__dict__['__wfattrs__'].keys():
+            #test to see if it's an attribute defined by an <attribute> tag
+            self.__dict__['__wfattrs__'][name] = value
+        else:
+            #set the value of the attribute in the normal method
             self.__dict__[name] = value
-    
+
+        #update any bindings
+        
+        #if there are bindings for this attribute
+        if hasattr(self,'__bindings__'):
+            if self.__bindings__.has_key(name):
+                #for each lambda "set" function
+                for binding in self.__bindings__[name]:
+                    #call it and set the value
+                    binding(value)
+
+        
     def __getattr__(self,name):
-        #dangerous overring this i imagine
-        #so we look through my custom attributes
-        try:
+        #first we need to see if it's a defined wildfire attribute
+        if name in self.__wfattrs__.keys():
+            #now let's see if it has a getter function
+            if name in self.__getters__.keys():
+                #if so, get the new value, and store it
+                import pdb
+                pdb.set_trace()
+                self.__wfattrs__[name] = self.__getters__[name]()
+
+            #either way, let's return the value
             return self.__wfattrs__[name]
-        except KeyError:
-            #and raise a similar error if we can't find them!!!!!
-            raise AttributeError("'%s' does not exist as a standard or WF attribute" % name)
+        
+        #raise a similar error if we can't find them!!!!!
+        raise AttributeError("'%s' does not exist as a standard or WF attribute" % name)
 
     def get_siblings(self):
         return self.parent.child_nodes
@@ -165,26 +205,12 @@ class Attribute(node):
     _instantiate_children = False
 
     def _construct(self):
-        #get the attribute
+        #get the name of the attribute
         attr_name = self.tag.get('name')
-        #self.parent.__attrs__.append(attr_name)
-        #print self.parent,attr_name
-        self.parent.__wfattrs__[attr_name] = Attr(get_uid())
-        #setattr(self.parent,attr_name,property(new_attr.default_set,new_attr.default_get))
         
-        #if it's a constraint
+        #mark it as a defined attribute to the class
+        self.parent.__wfattrs__[attr_name] = None
 
-        #not sure what the hell this is doing
-
-        #attempt to eval
-        #try:
-        #    data = eval(self.parent.tag.attributes[attr_name].value.value)
-        #except Exception, e:
-        #    print e
-        #    data = self.parent.tag.attributes[attr_name].value.value
-            
-        #if self.parent.tag.hasAttribute(attr_name):
-        #    setattr(self.parent,attr_name,data)
 
 # class Dataset(node):
 #     __tag__ = u'dataset'
