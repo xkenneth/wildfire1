@@ -58,7 +58,7 @@ def call_list(node,func):
 def call_func_inorder(node,func):
     call_list(node,func)
     for sub_node in node.child_nodes:
-            call_func_inorder(sub_node,func)   
+            call_func_inorder(sub_node,func)
         
         
 def call_func_postorder(node,func):

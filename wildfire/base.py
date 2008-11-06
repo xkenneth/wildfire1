@@ -3,7 +3,6 @@ from helper import extend, call_func_inorder, call_func_postorder, traverse_post
 from constraints import bind
 from tags import tags
 import gpath
-import pdb
 
 doc = None
 

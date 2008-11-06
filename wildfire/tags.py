@@ -8,13 +8,15 @@ import gpath
 
 #import urllib
 
+
+
 class node:
     """The base class for all other nodes."""
     #by default
     _name = True
     _instantiate_children = True
 
-    def __init__(self,parent,doc,tag=None):
+    def __init__(self,parent=None,doc=None,tag=None,**kwargs):
 
         #contains a list of attributes defined by <attribute> tags
         self.__dict__['__wfattrs__'] = {}
@@ -44,15 +46,27 @@ class node:
         self.__constraints__ = {}
 
         #if we have a native construct, call it
-        if hasattr(self,'_construct'):
-            self._construct()
+        if self.tag is not None:
+            if hasattr(self,'_construct'):
+                self._construct()
+        
+        #attach all of the other attributes defined in the __init__
+        for kw in kwargs:
+            self.__dict__[kw] = kwargs[kw]
+                
+        #call the _init method if we have it
+        if hasattr(self,'_init'):
+            self._init()
+            
+        
+            
 
     def __repr__(self):
         return "<"+self.__tag__+">"
 
     def __setattr__(self,name,value):
         
-        if value in self.__dict__['__wfattrs__'].keys():
+        if name in self.__dict__['__wfattrs__'].keys():
             #test to see if it's an attribute defined by an <attribute> tag
             self.__dict__['__wfattrs__'][name] = value
         else:
@@ -65,9 +79,9 @@ class node:
         if hasattr(self,'__bindings__'):
             if self.__bindings__.has_key(name):
                 #for each lambda "set" function
-                for binding in self.__bindings__[name]:
+                for binding, context in self.__bindings__[name]:
                     #call it and set the value
-                    binding(value)
+                    binding(context,value)
 
         
     def __getattr__(self,name):
@@ -76,9 +90,10 @@ class node:
             #now let's see if it has a getter function
             if name in self.__getters__.keys():
                 #if so, get the new value, and store it
-                import pdb
-                pdb.set_trace()
-                self.__wfattrs__[name] = self.__getters__[name]()
+                #we don't really need the for loop here, it just makes the code cleaner
+                for getter, context in self.__getters__[name]:
+                    return getter(context)
+
 
             #either way, let's return the value
             return self.__wfattrs__[name]
@@ -206,10 +221,12 @@ class Attribute(node):
 
     def _construct(self):
         #get the name of the attribute
-        attr_name = self.tag.get('name')
+        self.name = self.tag.get('name')
         
+    def _init(self):
         #mark it as a defined attribute to the class
-        self.parent.__wfattrs__[attr_name] = None
+        if self.parent:
+            self.parent.__wfattrs__[self.name] = None
 
 
 # class Dataset(node):
@@ -372,3 +389,4 @@ class Dataset(node):
         
         
 tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method]
+__all__ = ['Library','Import','Wfx','View','Handler','Attribute','Class','Script','Replicate','Event','Method','node']
