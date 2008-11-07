@@ -3,7 +3,7 @@ if __name__ == '__main__':
     
     from wildfire.tags import *
 
-    from wildfire.constraints import bind, unbind
+    from wildfire.constraints import bind, unbind, constrain, unconstrain, setup_constraints
 
     class Variable:
         """A dummy class that allows you to get and set a variable, used for testing purposes."""
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         def testName(self):
             self.failUnlessEqual(self.test_attribute.name,'Test')
             
-    class Bindings(unittest.TestCase):
+    class TestBindings(unittest.TestCase):
         def setUp(self):
             #set up two nodes for testing
             self.test_node = node()
@@ -81,6 +81,103 @@ if __name__ == '__main__':
             self.failUnlessEqual(self.test_node.__getters__['that'],[])
 
             #and it looks like we're good
+
+    class TestConstraints(unittest.TestCase):
+        def setUp(self):
+            #set up three test nodes and some dummy attributes
+            self.test_node_a = node()
+            Attribute(self.test_node_a,name='test')
+            
+            self.test_node_b = node()
+            Attribute(self.test_node_b,name='source_b')
+            
+            self.test_node_c = node()
+            Attribute(self.test_node_c,name='source_c')
+
+        def testSetUp(self):
+            pass
+
+        def testComplexConstraints(self):
+            #In this test we're going to constrain test_node_a.test to test_node_b.source_b and test_node_c.source_c
+            
+            #our test function
+            t = lambda: self.test_node_b.source_b + self.test_node_c.source_c
+
+            #set up some default values
+            self.test_node_a.test = 1
+            self.test_node_b.source_b = 2
+            self.test_node_c.source_c = 3
+
+            #set up the constraints
+            constrain(self.test_node_a,'test',self.test_node_b,'source_b')
+            constrain(self.test_node_a,'test',self.test_node_c,'source_c')
+
+            #assign the function to test_node_a
+            self.test_node_a._constraint['test'] = t
+
+            #notify the node
+            self.test_node_a.notify('test')
+            
+            #now our constraints are setup and initialized, let's make sure he's the proper value
+            
+            self.failUnlessEqual(self.test_node_a.test,5)
+
+            #now let's change each constraint 
+            self.test_node_b.source_b = 3
+
+            self.failUnlessEqual(self.test_node_a.test,6)
+
+            self.test_node_c.source_c = 4
+
+            self.failUnlessEqual(self.test_node_a.test,7)
+
+            #and finally unconstrain our element
+            unconstrain(self.test_node_a,'test')
+
+            self.failUnlessEqual(self.test_node_a.__constrained_to__['test'],{})
+            self.failUnlessEqual(self.test_node_b.__constraints__['source_b'],{})
+            self.failUnlessEqual(self.test_node_c.__constraints__['source_c'],{})
+
+            
+        def testConstraintString(self):
+
+            test_node_a = self.test_node_a
+            test_node_b = self.test_node_b
+            test_node_c = self.test_node_c
+
+            #set up some default values
+            self.test_node_a.test = 1
+            self.test_node_b.source_b = 2
+            self.test_node_c.source_c = 3
+            
+            cstring = '${test_node_b.source_b + test_node_c.source_c}'
+            
+            setup_constraints(test_node_a,'test',cstring,locals())
+
+            #now our constraints are setup and initialized, let's make sure he's the proper value
+            
+            self.failUnlessEqual(self.test_node_a.test,5)
+
+            #now let's change each constraint 
+            self.test_node_b.source_b = 3
+
+            self.failUnlessEqual(self.test_node_a.test,6)
+
+            self.test_node_c.source_c = 4
+
+            self.failUnlessEqual(self.test_node_a.test,7)
+
+            #and finally unconstrain our element
+            unconstrain(self.test_node_a,'test')
+
+            self.failUnlessEqual(self.test_node_a.__constrained_to__['test'],{})
+            self.failUnlessEqual(self.test_node_b.__constraints__['source_b'],{})
+            self.failUnlessEqual(self.test_node_c.__constraints__['source_c'],{})
+
+            
+        
+        
+            
 
             
     unittest.main()

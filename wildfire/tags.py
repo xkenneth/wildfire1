@@ -6,10 +6,6 @@ import sys
 from gxml import gxml
 import gpath
 
-#import urllib
-
-
-
 class node:
     """The base class for all other nodes."""
     #by default
@@ -19,7 +15,9 @@ class node:
     def __init__(self,parent=None,doc=None,tag=None,**kwargs):
 
         #contains a list of attributes defined by <attribute> tags
-        self.__dict__['__wfattrs__'] = {}
+        
+        if not '__wfattrs__' in self.__dict__:
+            self.__dict__['__wfattrs__'] = {}
 
         #the parent tag of this tag
         self.parent = parent
@@ -45,6 +43,13 @@ class node:
         #constraints are simply notifactions of an attribute to re-evaluate itself
         self.__constraints__ = {}
 
+        #the nodes.attrs that this node.attr is constrained to
+        self.__constrained_to__ = {}
+
+        #the function that gets evalued when this node is notified that one of the
+        #node.attr it's constrained to has changed
+        self._constraint = {}
+
         #if we have a native construct, call it
         if self.tag is not None:
             if hasattr(self,'_construct'):
@@ -52,17 +57,19 @@ class node:
         
         #attach all of the other attributes defined in the __init__
         for kw in kwargs:
-            self.__dict__[kw] = kwargs[kw]
+            #save the attribute as a wf attribute
+            self.__wfattrs__[kw] = kwargs[kw]
                 
         #call the _init method if we have it
         if hasattr(self,'_init'):
-            self._init()
-            
-        
+            self._init()        
             
 
     def __repr__(self):
-        return "<"+self.__tag__+">"
+        try:
+            return "<"+self.__tag__+">"
+        except:
+            return 'node'
 
     def __setattr__(self,name,value):
         
@@ -76,6 +83,7 @@ class node:
         #update any bindings
         
         #if there are bindings for this attribute
+
         if hasattr(self,'__bindings__'):
             if self.__bindings__.has_key(name):
                 #for each lambda "set" function
@@ -83,6 +91,12 @@ class node:
                     #call it and set the value
                     binding(context,value)
 
+        #if there are constraints for this attribute
+        if hasattr(self,'__constraints__'):
+            if self.__constraints__.has_key(name):
+                for node,attr in self.__constraints__[name].values():
+                    node.notify(attr)
+                    
         
     def __getattr__(self,name):
         #first we need to see if it's a defined wildfire attribute
@@ -103,6 +117,14 @@ class node:
 
     def get_siblings(self):
         return self.parent.child_nodes
+
+    def notify(self,attribute):
+        try:
+            value = self._constraint[attribute]()
+            setattr(self,attribute,value)
+        except Exception, e:
+            print e
+            raise ValueError('A notifier is trying to call a constraint the DNE!')
 
     siblings = property(get_siblings)
 
@@ -218,6 +240,8 @@ class Attribute(node):
 
     _name = False
     _instantiate_children = False
+
+    __wfattrs__ = {'name':None}
 
     def _construct(self):
         #get the name of the attribute
