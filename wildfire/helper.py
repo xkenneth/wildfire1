@@ -141,7 +141,7 @@ def is_constraint(str):
     match = constraint_re.match(str)
     if match:
         #if we've got a group, slice and return
-        return match.group()[2:-1]
+        return True
                 
 if __name__ == '__main__':
     import unittest

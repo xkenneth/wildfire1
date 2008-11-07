@@ -75,7 +75,7 @@ def setup_constraints(tag_node,tag_attr,cstring,local_vars):
                         constrained = True
                         var = local_vars[oper_s[0]]
                         constrain(tag_node,tag_attr,var,oper_s[1])
-    
+
     if constrained:
         t = lambda: eval(cstring,new_locals)
         tag_node._constraint[tag_attr] = t

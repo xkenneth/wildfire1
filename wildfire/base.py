@@ -1,6 +1,6 @@
 #import all of the built in tags
 from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, run_scripts
-from constraints import bind
+from constraints import setup_constraints
 from tags import tags
 import gpath
 
@@ -92,39 +92,21 @@ def assemble(tree,parent=None,data=None):
         #for all of the class defined attributes
         for attr_key in new_node.__wfattrs__:
 
-            if new_node.tag.get(attr_key):                
-                attr_val = None
-                try:
+            if new_node.tag.get(attr_key) is not None:                
+                if is_constraint(new_node.tag.get(attr_key)):
+                    #constraint it!
+                        setup_constraints(new_node,attr_key,new_node.tag.get(attr_key),parent.__dict__)
+                else:
+                    attr_val = None
                     #try to see if the attribute is a python expression (this takes care of converting to int, etc)
-                    attr_val = eval(new_node.tag.get(attr_key))
-                except NameError:
-                    pass
-
-                except SyntaxError:
-                    #if that's the case then we need to setup an attribute binding! (constraint)
-                    #regex it
-                    pass
-                    #constraint = is_constraint(new_node.tag.get(attr_key))
-                    #got the constraint 
-                    #if constraint:
-                        #turn it into a name
-                    #    try:
-                            #it's either global
-                    #        val = eval(constraint)
-                    #    except NameError:
-                            #or local
-                    #        val = eval('parent.%s' % constraint)
-                            #or a problem...
-
-                    #    if isinstance(val,Attr):
-                    #        bind(new_node.__wfattrs__[attr_key], val)
-                    
-                #if not take it as a string
-                if attr_val is None:
-                    attr_val = new_node.tag.get(attr_key)
+                    try:
+                        attr_val = eval(new_node.tag.get(attr_key))
+                    except:
+                        #if not take it as a string
+                        attr_val = new_node.tag.get(attr_key)
                 
-                #set the value of the attribute
-                setattr(new_node,attr_key,attr_val)
+                    #set the value of the attribute
+                    setattr(new_node,attr_key,attr_val)
 
     #if we're at the top level node we need to call the init, early and late handlers
 

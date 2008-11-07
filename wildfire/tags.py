@@ -183,10 +183,14 @@ class Script(node):
             #defining names (so you don't have to use nasty old self)
             if self.__tag__ == u'handler':
                 this = self.parent
+                parent = self.parent.parent
             else:
                 this = self
+                parent = self.parent
 
             doc = self.doc
+            
+
 
             #look for toplevel library nodes and assigning them to easy to access names
             for attribute in doc.__dict__:
@@ -242,15 +246,19 @@ class Attribute(node):
     _instantiate_children = False
 
     __wfattrs__ = {'name':None}
+    
+    default = ''
 
     def _construct(self):
         #get the name of the attribute
         self.name = self.tag.get('name')
+        self.default = self.tag.get('default')
         
     def _init(self):
         #mark it as a defined attribute to the class
         if self.parent:
-            self.parent.__wfattrs__[self.name] = None
+            self.parent.__wfattrs__[self.name] = self.default
+        
 
 
 # class Dataset(node):
