@@ -62,7 +62,7 @@ class node:
                 
         #call the _init method if we have it
         if hasattr(self,'_init'):
-            self._init()        
+            self._init()
             
 
     def __repr__(self):
@@ -131,14 +131,18 @@ class node:
 class Library(node):
     __tag__ = u'library'
 
-    def _construct(self):
-        
-        #get the module name
 
+    def _construct(self):        
+        #get the module name
         self.module = self.tag.get('library')
         
-        path = gpath.join(self.parent.import_path,self.module)
+    def _init(self):
         
+        if hasattr(self.parent,'import_path'):
+            path = gpath.join(self.parent.import_path,self.module)
+        else:
+            path = gpath.join('.',self.module)
+
         if gpath.isdir(path):
             self.import_path = path
             path = gpath.join(path,self.module+'.wfx')
@@ -149,8 +153,6 @@ class Library(node):
         #make sure it's good
         if not gpath.isfile(path):
             raise IOError('%s is not a file!' % path)
-        
-
         #parse it
         try:
             library_dom = gxml()
@@ -349,8 +351,6 @@ class Class(node):
 
         #else just add it to our list of tags
         tags.append(new_class)
-        
-
 
 class Replicate(node):
     __tag__ = u'replicate'
