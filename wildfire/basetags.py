@@ -110,7 +110,19 @@ class node:
         #call the _init method if we have it
         if hasattr(self,'_init'):
             self._init()
+
             
+        #children phase
+        #if we don't want to instantiate a node's children, we need to stop now
+        if not new_node._instantiate_children:
+            return
+
+        #construct all of the children recursively
+        self.child_nodes = [] 
+        for child in self.tag:
+            new_child = assemble(child,self)
+            if new_child is not None:
+                self.child_nodes.append(new_child)
 
     def __repr__(self):
         repr_str = []
@@ -451,9 +463,10 @@ class Replicate(node):
     
     def _construct(self):
         self.data_nodes = []
+
         self.data = eval(self.tag.get('over'))
+
         for data in self.data:
-            print data
             #self.data_nodes.append([self.tag,data])
             for child_node in self.tag:
                 #print child_node

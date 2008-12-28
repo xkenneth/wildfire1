@@ -58,9 +58,6 @@ def assemble(tree,parent=None,data=None,debug=False):
         return new_node
 
     
-    
-
-
     #if we don't want to instantiate a node's children, we need to stop now
     if not new_node._instantiate_children:
         return new_node
