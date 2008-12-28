@@ -10,7 +10,7 @@ from basetags import node
 
 from base import call_handlers
 
-tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method]
+tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method,node]
 
 path = ['.','lib']
 

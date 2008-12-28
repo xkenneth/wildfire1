@@ -19,6 +19,7 @@ class node:
     #by default
     _name = True
     _instantiate_children = True
+    __tag__ = 'node'
     
     def get_doc(self):
 
@@ -80,6 +81,22 @@ class node:
         #node.attr it's constrained to has changed
         self._constraint = {}
 
+        #setting up names!!
+        
+        
+        #if the tag class accepts names, ie, classes don't accept names
+        if self._name:
+            if self.tag is not None:
+                
+            #handling names and ids
+                if self.tag.get('id'):
+                    #attaching the node to it's parent as the given id
+                    setattr(self.doc,str(self.tag.get('id')),self)
+            
+                if self.tag.get('name'):
+                    #attaching the node to it's parent as the given name
+                    setattr(self.parent,str(self.tag.get('name')),self)
+            
         #if we have a native construct, call it
         if self.tag is not None:
             if hasattr(self,'_construct'):
@@ -157,8 +174,13 @@ class node:
         #raise a similar error if we can't find them!!!!!
         raise AttributeError("'%s' does not exist as a standard or WF attribute" % name)
 
+    
     def get_siblings(self):
+        """Return the nodes siblings. (including itself!)"""
         return self.parent.child_nodes
+
+    #make siblings accessible as a property
+    siblings = property(get_siblings)
 
     def notify(self,attribute):
         try:
@@ -168,7 +190,7 @@ class node:
             print e
             raise ValueError('A notifier is trying to call a constraint the DNE!')
 
-    siblings = property(get_siblings)
+    
 
 class Library(node):
     __tag__ = u'library'

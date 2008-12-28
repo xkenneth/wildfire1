@@ -57,16 +57,8 @@ def assemble(tree,parent=None,data=None,debug=False):
         #if it's a replicate tag we also need to stop here
         return new_node
 
-    #if the tag class accepts names, ie, classes don't accept names
-    if new_node._name:
-        #handling names and ids
-        if new_node.tag.get('id'):
-            #attaching the node to it's parent as the given id
-            setattr(doc,str(new_node.tag.get('id')),new_node)
-            
-        if new_node.tag.get('name'):
-            #attaching the node to it's parent as the given name
-            setattr(parent,str(new_node.tag.get('name')),new_node)
+    
+    
 
 
     #if we don't want to instantiate a node's children, we need to stop now
