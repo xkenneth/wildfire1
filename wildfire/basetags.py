@@ -1,18 +1,43 @@
-from helper import correct_indentation, extend, get_uid, uid
+from helper import correct_indentation, extend, get_uid, uid, find_lib
+
+from base import assemble
+
 from constraints import bind
+
+from elementtree.ElementTree import parse
+
+import wildfire
 
 import sys
 
-from gxml import gxml
-import gpath
+import os
+
+import string
 
 class node:
     """The base class for all other nodes."""
     #by default
     _name = True
     _instantiate_children = True
+    
+    def get_doc(self):
 
-    def __init__(self,parent=None,doc=None,tag=None,**kwargs):
+        #if we don't have a parent, this must be the doc
+        if self.parent is None:
+            return self
+
+        parent = self.parent
+
+        while(1):
+            if parent.parent is None:
+                break
+            parent = parent.parent
+        
+        return parent
+    
+    doc = property(get_doc)
+
+    def __init__(self,parent=None,tag=None,data=None,**kwargs):
 
         #contains a list of attributes defined by <attribute> tags
         
@@ -21,6 +46,11 @@ class node:
 
         #the parent tag of this tag
         self.parent = parent
+        
+        if self.parent is None:
+            #we're the doc! Let's announce it, since it's sort of a big deal
+            print "IM THE DOC:",self
+            self.events = []
 
         #the children of this tag
         self.child_nodes = []
@@ -28,8 +58,8 @@ class node:
         #this tags uid
         self.uid = get_uid()
 
-        #a linking to the doc
-        self.doc = doc
+        #data from a replicate
+        self.data = data
 
         #the actual tag (xml) from which this class tag as instantiated from
         self.tag = tag
@@ -66,10 +96,22 @@ class node:
             
 
     def __repr__(self):
+        repr_str = []
+
         try:
-            return "<"+self.__tag__+">"
-        except:
-            return 'node'
+            repr_str.append("<"+self.__tag__+">" + " @ " + str(id(self)))
+        except Exception, e:
+            repr_str.append('node')
+
+        if hasattr(self,'tag'):
+            if self.tag is not None:
+                if 'name' in self.tag.keys():
+                    repr_str.extend(['name',self.tag.attrib['name']])
+                
+                if 'on' in self.tag.keys():
+                    repr_str.extend(['on',self.tag.attrib['on']])
+        
+        return string.join(repr_str,' ')
 
     def __setattr__(self,name,value):
         
@@ -131,7 +173,6 @@ class node:
 class Library(node):
     __tag__ = u'library'
 
-
     def _construct(self):        
         #get the module name
         self.module = self.tag.get('library')
@@ -139,35 +180,62 @@ class Library(node):
     def _init(self):
         
         if hasattr(self.parent,'import_path'):
-            path = gpath.join(self.parent.import_path,self.module)
+            path = find_lib([self.parent.import_path],self.module)
         else:
-            path = gpath.join('.',self.module)
+            path = find_lib(wildfire.path,self.module)
+            
+        if path is None:
+            raise IOError('Could not locate module (%s)!' % self.module)
 
-        if gpath.isdir(path):
-            self.import_path = path
-            path = gpath.join(path,self.module+'.wfx')
-        else:
-            path = gpath.join(self.parent.import_path,self.module+'.wfx')
-            self.import_path = self.parent.import_path
-        
+        if os.path.basename(path) == '__init__.wfx':
+            self.import_path = os.path.dirname(path)
+            #if it's a module let's try to automatically recursively load all it's modules
+            for f in os.listdir(self.import_path):
+                if f != '__init__.wfx':
+                    #if it's a file
+                    if f.split('.')[-1] == 'wfx':
+                        module = string.join(f.split('.')[0:-1],'.')
+                        Library(self,module=module)
+                    #if it's a directory
+                    if os.path.isfile(os.path.join(self.import_path,f,'__init__.wfx')):
+                        Library(self,module=f)
+
+
+                    
+
         #make sure it's good
-        if not gpath.isfile(path):
-            raise IOError('%s is not a file!' % path)
+        if not os.path.isfile(path):
+            raise IOError('Cannot find file: %s!' % path)
         #parse it
-        try:
-            library_dom = gxml()
-            library_dom.parse(path)
-        except Exception, e:
-            print e
-            raise ImportError('Could not load module %s',path)
 
-        self.library_nodes = library_dom.child_nodes
+        try:
+            library_dom = parse(path).getroot()
+        except Exception, e:
+            print "Error: Could not load Wildfire module (%s)!" % path
+            print "The XML parser gave us this error message:"
+            print e
+            print ""
+            raise ImportError('Could not load module %s' % path)
+        
+        #recursively setup the children
+        kiddos = []
+        for kiddo in library_dom.getchildren():
+            new_kiddo = assemble(kiddo,parent=self,data=self.data)
+            if new_kiddo is not None:
+                kiddos.append(new_kiddo)
+
+        self.child_nodes.extend(kiddos)
+
+        if self.parent is not None:
+            setattr(self.parent,self.module,self)
+            
+            
 
 class Import(node):
     __tag__ = u'import'
     def _construct(self):
-        import tags
-        tags.__dict__[self.tag.get('module')] = __import__(self.tag.get('module'))
+        import basetags
+        basetags.__dict__[self.tag.get('module')] = __import__(self.tag.get('module'))
 
 class Wfx(node):
     __tag__ = u'wfx'
@@ -183,24 +251,28 @@ class Script(node):
             #event should be generic enough for various toolkits to pass event instances.
 
             #defining names (so you don't have to use nasty old self)
-            if self.__tag__ == u'handler':
-                this = self.parent
-                parent = self.parent.parent
-            else:
-                this = self
-                parent = self.parent
-
-            doc = self.doc
+            local_vars = {}
             
-
-
+            if self.__tag__ == u'handler':
+                local_vars['this'] = self.parent
+                local_vars['parent'] = self.parent.parent
+            else:
+                local_vars['this'] = self
+                local_vars['parent'] = self.parent
+                
+            local_vars['doc'] = self.doc
+            
             #look for toplevel library nodes and assigning them to easy to access names
-            for attribute in doc.__dict__:
-                if hasattr(doc.__dict__[attribute],'import_path'):
-                    exec("%s = doc.__dict__['%s']" % (attribute,attribute))
+            for attribute in self.doc.__dict__:
+                if hasattr(self.doc.__dict__[attribute],'import_path'):
+                    local_vars[attribute] = self.doc.__dict__[attribute]
+                    #exec("%s = doc.__dict__['%s']" % (attribute,attribute))
+
+            for tag in wildfire.tags:
+                local_vars[tag.__tag__] = tag
                     
             #executing the handler code
-            exec correct_indentation(self.tag.text)
+            exec correct_indentation(self.tag.text) in local_vars
             
         except Exception, e:
             #detailed error messages if we blow a bolt
@@ -259,9 +331,8 @@ class Attribute(node):
     def _init(self):
         #mark it as a defined attribute to the class
         if self.parent:
+            #assignt the default value to the attribute, the passed value will be populated later
             self.parent.__wfattrs__[self.name] = self.default
-        
-
 
 # class Dataset(node):
 #     __tag__ = u'dataset'
@@ -295,7 +366,7 @@ class Class(node):
             #get what it's looking for
             search_tag = self.tag.get('extends')
             
-            for tag in tags:
+            for tag in wildfire.tags:
                 #find a match
                 if search_tag == tag.__tag__:
                     parent_tag = tag
@@ -315,7 +386,8 @@ class Class(node):
                     
                     self.tag = extend(self.tag,parent_tag.tag,attributes=False)
                     #pdb.set_trace()
-                    self.tag.remove_attr('extends')
+                    self.tag.attrib.pop('extends')
+                    #self.tag.remove_attr('extends')
 
                     #print "COMBINED"
                     #print self.tag
@@ -344,13 +416,13 @@ class Class(node):
         new_class.tag = self.tag
         
         #replace it if necessary
-        for i in range(len(tags)):
-            if tags[i].__tag__ == new_class.__tag__:
-                tags[i] = new_class
+        for i,tag in enumerate(wildfire.tags):
+            if tag.__tag__ == new_class.__tag__:
+                wildfire.tags[i] = new_class
                 return
 
         #else just add it to our list of tags
-        tags.append(new_class)
+        wildfire.tags.append(new_class)
 
 class Replicate(node):
     __tag__ = u'replicate'
@@ -359,10 +431,15 @@ class Replicate(node):
         self.data_nodes = []
         self.data = eval(self.tag.get('over'))
         for data in self.data:
+            print data
             #self.data_nodes.append([self.tag,data])
             for child_node in self.tag:
+                #print child_node
                 self.data_nodes.append([child_node,data])
-                    #new_node = assemble(child_node,self,data=data)
+                #new_node = assemble(child_node,self.parent,data=data)
+                #self.parent.child_nodes.append(new_node)
+                #self.data_nodes.append([new_node,data])
+                #print self.data_nodes
 
     def update(self):
         new_data = eval(self.tag.get('over'))
@@ -390,6 +467,8 @@ class Method(node):
         #assemble the anonymous function
         #we don't need to name it because that will be handled by the name/id mechanism
         args = self.tag.get('args')
+        #import pdb
+        #pdb.set_trace()
         if args is None:
             args = ''
         func = ('def wf_temp_func(%s):' % args ) + '\n'
@@ -400,6 +479,9 @@ class Method(node):
         
         #save the function as an attribute
         self.func = wf_temp_func
+
+        #import pdb
+        #pdb.set_trace()
 
         if self.tag.get('name'):
             setattr(self.parent,self.tag.get('name'),self)
@@ -417,8 +499,3 @@ class Dataset(node):
             usock.close()
         else:
             pdb.set_trace()
-
-        
-        
-tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method]
-__all__ = ['Library','Import','Wfx','View','Handler','Attribute','Class','Script','Replicate','Event','Method','node']
