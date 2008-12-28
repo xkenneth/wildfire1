@@ -114,15 +114,15 @@ class node:
             
         #children phase
         #if we don't want to instantiate a node's children, we need to stop now
-        if not new_node._instantiate_children:
+        if not self._instantiate_children:
             return
 
         #construct all of the children recursively
-        self.child_nodes = [] 
-        for child in self.tag:
-            new_child = assemble(child,self)
-            if new_child is not None:
-                self.child_nodes.append(new_child)
+        if self.tag:
+            for child in self.tag:
+                new_child = assemble(child,self)
+                if new_child is not None:
+                    self.child_nodes.append(new_child)
 
     def __repr__(self):
         repr_str = []
