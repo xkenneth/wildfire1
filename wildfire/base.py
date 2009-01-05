@@ -58,44 +58,6 @@ def assemble(tree,parent=None,data=None,debug=False):
         return new_node
 
     
-    #if we don't want to instantiate a node's children, we need to stop now
-    if not new_node._instantiate_children:
-        return new_node
-
-    #construct all of the children recursively
-    children = []
-    for child in new_node.tag:
-        new_child = assemble(child,new_node)
-        if new_child is not None:
-            children.append(new_child)
-
-    #attach the children to the node
-    new_node.child_nodes = children
-    
-    
-    #handling given attributes - we need to do this after all of the attribute tags have been executed
-    if new_node is not new_node.doc:
-        #for all of the class defined attributes
-        for attr_key in new_node.__wfattrs__:
-
-            if new_node.tag.get(attr_key) is not None:                
-                if is_constraint(new_node.tag.get(attr_key)):
-                    #constrain it!
-                        setup_constraints(new_node,attr_key,new_node.tag.get(attr_key),parent.__dict__)
-                else:
-                    attr_val = None
-                    #try to see if the attribute is a python expression (this takes care of converting to int, etc)
-                    #try:
-                    #    this = new_node
-                    #    attr_val = eval(new_node.tag.get(attr_key))
-                    #except Exception, e:
-                    #    print e
-                        #if not take it as a string
-                    attr_val = new_node.tag.get(attr_key)
-                
-                    #set the value of the attribute
-                    setattr(new_node,attr_key,attr_val)
-
     #if we're at the top level node we need to call the init, early and late handlers
 
     #early

@@ -97,22 +97,56 @@ class node:
                     #attaching the node to it's parent as the given name
                     setattr(self.parent,str(self.tag.get('name')),self)
             
+        #
+        #   CONSTRUCT
+        # 
+                    
         #if we have a native construct, call it
         if self.tag is not None:
             if hasattr(self,'_construct'):
                 self._construct()
-        
+
+        #
+        #   ATTRIBUTES
+        #
+
+        #handling given attributes - we need to do this after all of the attribute tags have been executed
+        if self is not self.doc:
+        #for all of the class defined attributes
+            for attr_key in self.__wfattrs__:
+
+                if self.tag.get(attr_key) is not None:                
+                    if is_constraint(self.tag.get(attr_key)):
+                        #constrain it!
+                        setup_constraints(self,attr_key,self.tag.get(attr_key),parent.__dict__)
+                    else:
+                        attr_val = self.tag.get(attr_key)
+                
+                        #set the value of the attribute
+                        setattr(self,attr_key,attr_val)
+
+        #
+        #   KEY WORD ARGUMENTS
+        #
+                
+        #keyword arguments take the place of attributes when the classes are instantiated in python instead of in xml
         #attach all of the other attributes defined in the __init__
         for kw in kwargs:
             #save the attribute as a wf attribute
             self.__wfattrs__[kw] = kwargs[kw]
-                
+        
+        #
+        #   INIT
+        #
+
         #call the _init method if we have it
         if hasattr(self,'_init'):
             self._init()
 
-            
-        #children phase
+        #
+        #   CHILD NODES
+        #
+
         #if we don't want to instantiate a node's children, we need to stop now
         if not self._instantiate_children:
             return
