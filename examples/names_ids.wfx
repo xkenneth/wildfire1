@@ -3,6 +3,12 @@
     <node name="bar">
       <node name="hello" id="world"/>
     </node>
+    <node name="a">
+      <script>
+	print b
+      </script>
+    </node>
+    <node name="b"/>
   </node>
   <script>
     print doc.foo

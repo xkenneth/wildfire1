@@ -1,8 +1,19 @@
-<wfx>
-  <window>
-    <wraplayout count="2"/>
-    <entry name="test_entry"/>
-    <text text="${'Text is: ' + test_entry.value}"/>
-  </window>
-</wfx>
-      
+<canvas>
+  <class name="a">
+    <attribute name="test_1"/>
+  </class>
+  <class name="b">
+    <attribute name="test_2"/>
+  </class>
+
+  <a name="node_1" test_1="1"/>
+  <b test_2="${node_1.test_1->node_1.test_1 + 1}"/>
+
+  <script>
+    import pdb
+    pdb.set_trace()
+  </script>
+
+</canvas>
+    
+  

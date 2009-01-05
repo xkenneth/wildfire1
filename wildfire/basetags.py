@@ -1,4 +1,4 @@
-from helper import correct_indentation, extend, get_uid, uid, find_lib
+from helper import correct_indentation, extend, get_uid, uid, find_lib, is_constraint, stuff_dict
 
 from base import assemble
 
@@ -39,6 +39,10 @@ class node:
     doc = property(get_doc)
 
     def __init__(self,parent=None,tag=None,data=None,**kwargs):
+
+        #
+        #    INITIALIZATION
+        #
 
         #contains a list of attributes defined by <attribute> tags
         
@@ -81,8 +85,9 @@ class node:
         #node.attr it's constrained to has changed
         self._constraint = {}
 
-        #setting up names!!
-        
+        #
+        #     NAMES AND IDS
+        # 
         
         #if the tag class accepts names, ie, classes don't accept names
         if self._name:
@@ -106,24 +111,7 @@ class node:
             if hasattr(self,'_construct'):
                 self._construct()
 
-        #
-        #   ATTRIBUTES
-        #
-
-        #handling given attributes - we need to do this after all of the attribute tags have been executed
-        if self is not self.doc:
-        #for all of the class defined attributes
-            for attr_key in self.__wfattrs__:
-
-                if self.tag.get(attr_key) is not None:                
-                    if is_constraint(self.tag.get(attr_key)):
-                        #constrain it!
-                        setup_constraints(self,attr_key,self.tag.get(attr_key),parent.__dict__)
-                    else:
-                        attr_val = self.tag.get(attr_key)
-                
-                        #set the value of the attribute
-                        setattr(self,attr_key,attr_val)
+        
 
         #
         #   KEY WORD ARGUMENTS
@@ -136,7 +124,7 @@ class node:
             self.__wfattrs__[kw] = kwargs[kw]
         
         #
-        #   INIT
+        #   BASE CLASS SPECIFIC INIT
         #
 
         #call the _init method if we have it
@@ -158,7 +146,44 @@ class node:
                 if new_child is not None:
                     self.child_nodes.append(new_child)
 
+        #
+        #   ATTRIBUTES & CONSTRAINTS
+        #
+
+        #handling given attributes - we need to do this after all of the attribute tags have been executed
+        if self is not self.doc:
+            if self.tag is not None:
+            #for all of the class defined attributes
+                for attr_key in self.__wfattrs__:
+                    if self.tag.get(attr_key) is not None:
+                        if is_constraint(self.tag.get(attr_key)):
+                        #constrain it!
+                            
+                            constraint_formula= self.tag.get(attr_key)[2:-1]
+                            constraint_sources, constraint_statement = constraint_formula.split('->')
+                            constraint_sources = constraint_sources.split(',')
+
+                            
+                            for c_source in constraint_sources:
+                                source_node = string.join(c_source.split('.')[0:-1],'.')
+                                source_attr = c_source.split('.')[-1]
+
+                                import pdb
+                                pdb.set_trace()
+                                
+                                constrain(self,attr_key,source_node,source_attr)
+                                
+                                
+                            #setup_constraints(self,attr_key,self.tag.get(attr_key),parent.__dict__)
+                            
+                        else:
+                            attr_val = self.tag.get(attr_key)
+                            
+                            #set the value of the attribute
+                            setattr(self,attr_key,attr_val)
+
     def __repr__(self):
+
         repr_str = []
 
         try:
@@ -327,7 +352,12 @@ class Script(node):
             else:
                 local_vars['this'] = self
                 local_vars['parent'] = self.parent
-                
+            
+            #setting up local scopes
+            if hasattr(local_vars['parent'],'parent'):
+                if local_vars['parent'].parent is not None:
+                    local_vars = stuff_dict(local_vars,local_vars['parent'].parent.__dict__)
+
             local_vars['doc'] = self.doc
             
             #look for toplevel library nodes and assigning them to easy to access names
@@ -385,6 +415,7 @@ class Attribute(node):
     __tag__ = u'attribute'
 
     _name = False
+
     _instantiate_children = False
 
     __wfattrs__ = {'name':None}

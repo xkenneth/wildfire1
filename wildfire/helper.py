@@ -24,6 +24,12 @@ def find_lib(paths,module):
         if os.path.isfile(os.path.join(path,module+'.wfx')):
             return os.path.join(path,module+'.wfx')
 
+def stuff_dict(target_dict,source_dict):
+    """Take the contents of the source_dict and stuff it into the target_dict."""
+    for k in source_dict.keys():
+        target_dict[k] = source_dict[k]
+    return target_dict
+
 def get_uid():
     global uid
     last = uid
@@ -156,6 +162,8 @@ def is_constraint(str):
     if match:
         #if we've got a group, slice and return
         return True
+    else:
+        return False
                 
 if __name__ == '__main__':
     import unittest

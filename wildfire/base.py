@@ -34,7 +34,6 @@ def assemble(tree,parent=None,data=None,debug=False):
     
     #if we tried to construct a junk node such as text, ignore it
     if new_node is None: return
-
     
     print "Constructing node: ",new_node, "\t\t","p:",parent
 
