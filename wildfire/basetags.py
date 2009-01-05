@@ -2,7 +2,7 @@ from helper import correct_indentation, extend, get_uid, uid, find_lib, is_const
 
 from base import assemble
 
-from constraints import bind
+from constraints import bind, constrain
 
 from elementtree.ElementTree import parse
 
@@ -16,9 +16,14 @@ import string
 
 class node:
     """The base class for all other nodes."""
-    #by default
+
+    #the _name attributes designates whether a node type can be given names and ids
     _name = True
+    
+    #if the _instantiate_children flag is true then we instantiate children in the normal way
     _instantiate_children = True
+    
+    #every base tag has a __tag__ name designating the node
     __tag__ = 'node'
     
     def get_doc(self):
@@ -106,15 +111,14 @@ class node:
         #   CONSTRUCT
         # 
                     
-        #if we have a native construct, call it
+        #if we have a native construct and a tag, call it, call it
+        #_construct methods are provided to extract required arguments from XML nodes
         if self.tag is not None:
             if hasattr(self,'_construct'):
                 self._construct()
 
-        
-
         #
-        #   KEY WORD ARGUMENTS
+        #   KEYWORD ARGUMENTS
         #
                 
         #keyword arguments take the place of attributes when the classes are instantiated in python instead of in xml
@@ -167,12 +171,23 @@ class node:
                             for c_source in constraint_sources:
                                 source_node = string.join(c_source.split('.')[0:-1],'.')
                                 source_attr = c_source.split('.')[-1]
-
-                                import pdb
-                                pdb.set_trace()
                                 
+                                #execute the code with the parent's dict (gives access to names, etc)
+                                source_node = eval(source_node,self.parent.__dict__)
+
                                 constrain(self,attr_key,source_node,source_attr)
                                 
+                            constraint_script = Script(parent=self.parent,python_statement=constraint_statement,evaluate=True)
+                            
+                            #constraint_script()
+                            
+                            #import pdb
+                            #pdb.set_trace()
+                            
+                            #setting up the scope
+
+                            self._constraint[attr_key] = constraint_script
+                            self.notify(attr_key)
                                 
                             #setup_constraints(self,attr_key,self.tag.get(attr_key),parent.__dict__)
                             
@@ -339,6 +354,10 @@ class View(node):
 class Script(node):
     __tag__ = u'script'
 
+    def _construct(self):
+        self.evaluate = False
+        self.python_statement = self.tag.text
+
     def __call__(self,event=None):
         try:
             #event should be generic enough for various toolkits to pass event instances.
@@ -354,9 +373,11 @@ class Script(node):
                 local_vars['parent'] = self.parent
             
             #setting up local scopes
-            if hasattr(local_vars['parent'],'parent'):
-                if local_vars['parent'].parent is not None:
-                    local_vars = stuff_dict(local_vars,local_vars['parent'].parent.__dict__)
+            #import pdb
+            #pdb.set_trace()
+            #if hasattr(local_vars['parent'],'parent'):
+            #    if local_vars['parent'].parent is not None:
+            local_vars = stuff_dict(local_vars,local_vars['parent'].__dict__)
 
             local_vars['doc'] = self.doc
             
@@ -366,19 +387,26 @@ class Script(node):
                     local_vars[attribute] = self.doc.__dict__[attribute]
                     #exec("%s = doc.__dict__['%s']" % (attribute,attribute))
 
+            #add the defined classes
             for tag in wildfire.tags:
                 local_vars[tag.__tag__] = tag
                     
             #executing the handler code
-            exec correct_indentation(self.tag.text) in local_vars
+            print self.evaluate
+            if not self.evaluate:
+                exec correct_indentation(self.python_statement) in local_vars
+            else:
+                return eval(correct_indentation(self.python_statement),local_vars)
             
         except Exception, e:
             #detailed error messages if we blow a bolt
             print "An error occured in WFX embedded code!"
-            print "The handler was on='%s'" % self.tag.get('on')
+
+            if self.tag is not None:
+                print "The handler was on='%s'" % self.tag.get('on')
             print "It's parent was %s" % self.parent
             print "The code was..."
-            print self.tag.text
+            print self.python_statement
             try:
                 import traceback
                 print "Here's the traceback..."

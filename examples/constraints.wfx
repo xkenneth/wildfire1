@@ -7,11 +7,14 @@
   </class>
 
   <a name="node_1" test_1="1"/>
-  <b test_2="${node_1.test_1->node_1.test_1 + 1}"/>
+  <b name="node_2" test_2="${node_1.test_1->int(node_1.test_1) + 1}"/>
 
   <script>
-    import pdb
-    pdb.set_trace()
+    print node_1.test_1
+    print node_2.test_2
+    node_1.test_1 = 3
+    print node_1.test_1
+    print node_2.test_2
   </script>
 
 </canvas>
