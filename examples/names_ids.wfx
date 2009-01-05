@@ -1,0 +1,13 @@
+<wfx>
+  <node name="foo">
+    <node name="bar">
+      <node name="hello" id="world"/>
+    </node>
+  </node>
+  <script>
+    print doc.foo
+    print doc.foo.bar
+    print doc.foo.bar.hello
+    print doc.world
+  </script>
+</wfx>

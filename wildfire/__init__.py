@@ -1,6 +1,21 @@
+#import sys
+#import os
+
 from base import assemble
-from gxml import gxml
-from tags import Library
+from elementtree.ElementTree import fromstring
+import elementtree.ElementTree as et
+
+from basetags import Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method
+from basetags import node
+
+from base import call_handlers
+
+tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method,node]
+
+path = ['.','lib']
+
+#for p in path:
+#    sys.path.append(os.path.join(os.getcwd(),p))
 
 def run(file,debug=True):
     """Parse the XML file, create the environment, and ....leaving the running up to the libraries!"""
@@ -10,21 +25,43 @@ def run(file,debug=True):
     
     #try to find the default GUI libraries
     
-    guis = ['wxw','wtk']
+    # guis = ['wxw','wtk']
     
-    for gui in guis:
-        try:
-            library_dom = gxml()
-            library_dom.from_string("<wfx><library library='%s'/></wfx>" % gui)
-            ldom = assemble(library_dom)
-            print "Using %s" % gui
-            break
-        except IOError:
-            pass
+#     for gui in guis:
+#         try:
+#             print gui
+#             library_dom = fromstring("<wfx><library library='%s'/></wfx>" % gui)
+            
+#             print "dom"
+#             ldom = assemble()
+#             print "Using %s" % gui
+#             break
+#         except IOError, e:
+#             print e
+#             print "error"
+#             pass
 
-    dom = gxml()
+    #initiate the base document
+    doc = node()
 
-    dom.parse(file)
+    #predefined gui libs
+    gui_libs = ['wxw']
     
-    doc = assemble(dom)
+    #try to load each one
+    for lib in gui_libs:
+        Library(doc,module=lib)
+
+    print "DONE IMPORTING BASE LIBRARIES"
+
+    #get the dom
+    dom = et.parse(file).getroot()
+
+    #assemble the child nodes
+    children = []
+    for child in dom.getchildren():
+        children.append(assemble(child,doc))
+
+    doc.child_nodes = children
+        
+    call_handlers(doc)
     

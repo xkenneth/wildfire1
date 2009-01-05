@@ -1,14 +1,28 @@
 import re
 
-from gxml import gxml, clone, Element
+from elementtree.ElementTree import Element, fromstring, tostring
+
+import os
 
 space_re = re.compile('\s*')
 tab_re = re.compile('t*')
 constraint_re = re.compile('\${.*}')
 
+def clone(element):
+    return fromstring(tostring(element))
+
 uid = 0
 
 operators = ['+','-','*','/','//','**','%','<<','>>','&','|','^','~','<','>','==','!=','>=','<=','=','+=','-=','*=','/=','//=','**=','%=','and','or','not']
+
+def find_lib(paths,module):
+    for path in paths:
+        #if path/module is a dir
+        if os.path.isdir(os.path.join(path,module)):
+            return os.path.join(path,module,'__init__.wfx')
+        # if path/module.wfx is a file
+        if os.path.isfile(os.path.join(path,module+'.wfx')):
+            return os.path.join(path,module+'.wfx')
 
 def get_uid():
     global uid
@@ -150,8 +164,8 @@ if __name__ == '__main__':
     
     class HelperTests(unittest.TestCase):
         def setUp(self):
-            t = gxml()
-            t.from_string('<temp/>')
+            
+            from_string('<temp/>')
             
             s1 = Element('class')
             s1.set('name','test')
