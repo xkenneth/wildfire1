@@ -1,0 +1,8 @@
+<wfx>
+  <window>
+    <wraplayout count="2"/>
+    <entry name="test_entry"/>
+    <text text="${'Text is: ' + test_entry.value}"/>
+  </window>
+</wfx>
+      

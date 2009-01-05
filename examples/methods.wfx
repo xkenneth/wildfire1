@@ -1,0 +1,21 @@
+<wfx>
+  <class name="test">
+    <method name="hello">
+      print "Hello!"
+    </method>
+  </class>
+
+  <script>
+    
+    t = test()
+    
+        
+    import pdb
+    pdb.set_trace()
+
+    t.hello()
+
+  </script>
+</wfx>
+  
+    
