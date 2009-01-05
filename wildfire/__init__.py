@@ -45,7 +45,7 @@ def run(file,debug=True):
     doc = node()
 
     #predefined gui libs
-    gui_libs = ['wxw']
+    gui_libs = ['wtk']
     
     #try to load each one
     for lib in gui_libs:

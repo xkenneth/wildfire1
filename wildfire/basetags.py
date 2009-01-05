@@ -59,7 +59,6 @@ class node:
         
         if self.parent is None:
             #we're the doc! Let's announce it, since it's sort of a big deal
-            print "IM THE DOC:",self
             self.events = []
 
         #the children of this tag
@@ -217,7 +216,7 @@ class node:
         return string.join(repr_str,' ')
 
     def __setattr__(self,name,value):
-        
+
         if name in self.__dict__['__wfattrs__'].keys():
             #test to see if it's an attribute defined by an <attribute> tag
             self.__dict__['__wfattrs__'][name] = value
@@ -392,9 +391,8 @@ class Script(node):
                 local_vars[tag.__tag__] = tag
                     
             #executing the handler code
-            print self.evaluate
             if not self.evaluate:
-                exec correct_indentation(self.python_statement) in local_vars
+                exec correct_indentation(self.python_statement) in local_vars, globals()
             else:
                 return eval(correct_indentation(self.python_statement),local_vars)
             
@@ -406,7 +404,8 @@ class Script(node):
                 print "The handler was on='%s'" % self.tag.get('on')
             print "It's parent was %s" % self.parent
             print "The code was..."
-            print self.python_statement
+            if hasattr(self,'python_statement'):
+                print self.python_statement
             try:
                 import traceback
                 print "Here's the traceback..."
@@ -419,6 +418,11 @@ class Handler(Script):
     __tag__ = u'handler'
 
     def _construct(self):
+        
+        self.evaluate = False
+        
+        self.python_statement = self.tag.text
+
         #get the handler name
         handler_name = self.tag.get('on')
         #if a list hasn't been setup for this handler
@@ -498,32 +502,8 @@ class Class(node):
                 if search_tag == tag.__tag__:
                     parent_tag = tag
 
-                    #take all of the nodes from the tag we're extending
-                    #target_tag = self.tag.cloneNode(self.tag)
-                    #source_tag = parent_tag.tag.cloneNode(parent_tag.tag)
-                    
-                    
-                    #print "SOURCE"
-                    #print parent_tag.tag
-                    #print parent_tag.tag.toxml()
-                    
-                    #print "TARGET"
-                    #print self.tag
-                    #print self.tag.toxml()
-                    
                     self.tag = extend(self.tag,parent_tag.tag,attributes=False)
-                    #pdb.set_trace()
                     self.tag.attrib.pop('extends')
-                    #self.tag.remove_attr('extends')
-
-                    #print "COMBINED"
-                    #print self.tag
-                    #print self.tag.toxml()
-
-                    #remove the extend tag so we don't recurse?
-                    #target_tag.removeAttribute('extends')
-                    #hold onto to the combined tag
-                    #parent_tag.tag = target_tag
         else:
             #if we're just extending node
             parent_tag = node
@@ -562,7 +542,6 @@ class Replicate(node):
         for data in self.data:
             #self.data_nodes.append([self.tag,data])
             for child_node in self.tag:
-                #print child_node
                 self.data_nodes.append([child_node,data])
                 #new_node = assemble(child_node,self.parent,data=data)
                 #self.parent.child_nodes.append(new_node)
@@ -572,7 +551,6 @@ class Replicate(node):
     def update(self):
         new_data = eval(self.tag.get('over'))
         if self.data != new_data:
-            #print self.data,new_data
             print "Data Changed!"
 
 class EventMapping:

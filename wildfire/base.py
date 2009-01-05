@@ -5,13 +5,6 @@ import wildfire
 import string
 from elementtree.ElementTree import tostring
 
-#def wrap_assemble(func):
-#    def inner_func(*args,**kwargs):
-#        data = func(*args,**kwargs)
-#        #print "Ending construction:", data
-#        return data
-#    return inner_func
-
 def call_handlers(node):
     """After a top-level node has finished construction, we need to call all of the handlers in the proper order."""
     call_func_inorder(node,'construct')
@@ -22,7 +15,6 @@ def call_handlers(node):
     call_by_level(node,func='late')
     
     
-#@wrap_assemble
 def assemble(tree,parent=None,data=None,debug=False):
     """Properly setup a tree of nodes."""
 
