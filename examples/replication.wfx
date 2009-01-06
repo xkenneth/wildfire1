@@ -1,9 +1,0 @@
-<wfx>
-  <window>
-    <simplelayout axis="x"/>
-    <replicate over="range(10)">
-      <text text="this.data">
-      </text>
-    </replicate>
-  </window>
-</wfx>

@@ -27,7 +27,7 @@ def assemble(tree,parent=None,data=None,debug=False):
     #if we tried to construct a junk node such as text, ignore it
     if new_node is None: return
     
-    print "Constructing node: ",new_node, "\t\t","p:",parent
+    #print "Constructing node: ",new_node, "\t\t","p:",parent
 
     #if the toplevel doc is none, then the first node we EVER come across should be it
 
