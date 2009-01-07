@@ -1,5 +1,5 @@
 #import all of the built in tags
-from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, run_scripts
+from helper import extend, is_constraint
 import wildfire
 import string
 from elementtree.ElementTree import tostring

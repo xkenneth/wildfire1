@@ -1,16 +1,12 @@
-from helper import correct_indentation, extend, get_uid, uid, find_lib, is_constraint, stuff_dict, call_handlers
+from helper import correct_indentation, extend, find_lib, is_constraint, stuff_dict, call_handlers
 
-from constraints import bind, constrain
+from constraints import constrain
 
 from elementtree.ElementTree import parse
 
 import wildfire
 
-import sys
-
-import os
-
-import string
+import sys, os, string, types
 
 #meta_nodes = ['attribute','class']
 
@@ -19,6 +15,8 @@ class node:
 
     #the _name attributes designates whether a node type can be given names and ids
     _name = True
+
+    meta_ = False
     
     #if the _instantiate_children flag is true then we instantiate children in the normal way
     _instantiate_children = True
@@ -49,49 +47,38 @@ class node:
         #    INITIALIZATION
         #
 
-        #contains a list of attributes defined by <attribute> tags
-        
-        if not '__wfattrs__' in self.__dict__:
-            self.__dict__['__wfattrs__'] = {}
+        self.__dict__['self'] = self
+
+        #a list of defined attributes
+        self.__dict__['wfattrs_'] = []
 
         #the parent tag of this tag
-        self.parent = parent
+        self.__dict__['parent'] = parent
         
-        if self.parent is None:
-            #we're the doc! Let's announce it, since it's sort of a big deal
-            self.events = []
-
         #the children of this tag
-        self.child_nodes = []
+        self.__dict__['child_nodes'] = []
         
-        #this tags uid
-        self.uid = get_uid()
-
         #data from a replicate
-        self.data = data
+        self.__dict__['data'] = data
 
         #the actual tag (xml) from which this class tag as instantiated from
         if tag is not None:
-            self.tag = tag
+            self.__dict__['tag'] = tag
         else:
             if not hasattr(self,'tag'):
-                self.tag = None
+                self.__dict__['tag'] = None
 
-        #bindings are constraints where we set the value
-        self.__bindings__ = {}
+        #
+        #   HANDLERS
+        #
+        #  { h_attr:
+        #       { listener_node : bound function }
+        #  }                
 
-        #some attribute values need to be retrieved
-        self.__getters__ = {}
-        
-        #constraints are simply notifactions of an attribute to re-evaluate itself
-        self.__constraints__ = {}
+        self.__dict__['senders_'] = {}
 
-        #the nodes.attrs that this node.attr is constrained to
-        self.__constrained_to__ = {}
-
-        #the function that gets evalued when this node is notified that one of the
-        #node.attr it's constrained to has changed
-        self._constraint = {}
+        #listeners
+        self.__dict__['listeners_'] = {}
 
         #
         #     NAMES AND IDS
@@ -109,6 +96,7 @@ class node:
                     if self.tag.get('name') is not None:
                         #attaching the node to it's parent as the given name
                         setattr(self.parent,str(self.tag.get('name')),self)
+                        self['my_name_'] = self.tag.get('name')
             
         #
         #   CONSTRUCT - FOR INSTANTIATING FROM XML
@@ -128,7 +116,7 @@ class node:
         #attach all of the other attributes defined in the __init__
         for kw in kwargs:
             #save the attribute as a wf attribute
-            self.__wfattrs__[kw] = kwargs[kw]
+            self.__dict__[kw] = kwargs[kw]
         
         #
         #   BASE CLASS SPECIFIC INIT
@@ -161,44 +149,44 @@ class node:
         if self is not self.application:
             if self.tag is not None:
             #for all of the class defined attributes
-                for attr_key in self.__wfattrs__:
-                    if self.tag.get(attr_key) is not None:
-                        if is_constraint(self.tag.get(attr_key)):
+                for attr in self.wfattrs_:
+                    if self.tag.get(attr) is not None:
+                        if is_constraint(self.tag.get(attr)):
                         #constrain it!
-                            
-                            constraint_formula= self.tag.get(attr_key)[2:-1]
-                            constraint_sources, constraint_statement = constraint_formula.split('->')
-                            constraint_sources = constraint_sources.split(',')
+                            pass
+                            # constraint_formula= self.tag.get(attr)[2:-1]
+#                             constraint_sources, constraint_statement = constraint_formula.split('->')
+#                             constraint_sources = constraint_sources.split(',')
 
                             
-                            for c_source in constraint_sources:
-                                source_node = string.join(c_source.split('.')[0:-1],'.')
-                                source_attr = c_source.split('.')[-1]
+#                             for c_source in constraint_sources:
+#                                 source_node = string.join(c_source.split('.')[0:-1],'.')
+#                                 source_attr = c_source.split('.')[-1]
                                 
-                                #execute the code with the parent's dict (gives access to names, etc)
-                                source_node = eval(source_node,self.parent.__dict__)
+#                                 #execute the code with the parent's dict (gives access to names, etc)
+#                                 source_node = eval(source_node,self.parent.__dict__)
 
-                                constrain(self,attr_key,source_node,source_attr)
+#                                 constrain(self,attr,source_node,source_attr)
                                 
-                            constraint_script = Script(parent=self.parent,python_statement=constraint_statement,evaluate=True)
+#                             constraint_script = Script(parent=self.parent,python_statement=constraint_statement,evaluate=True)
                             
-                            #constraint_script()
+#                             #constraint_script()
                             
-                            #import pdb
-                            #pdb.set_trace()
+#                             #import pdb
+#                             #pdb.set_trace()
                             
-                            #setting up the scope
+#                             #setting up the scope
 
-                            self._constraint[attr_key] = constraint_script
-                            self.notify(attr_key)
+#                             self._constraint[attr] = constraint_script
+#                             self.notify(attr)
                                 
-                            #setup_constraints(self,attr_key,self.tag.get(attr_key),parent.__dict__)
+#                             #setup_constraints(self,attr,self.tag.get(attr),parent.__dict__)
                             
                         else:
-                            attr_val = self.tag.get(attr_key)
+                            attr_val = self.tag.get(attr)
                             
                             #set the value of the attribute
-                            setattr(self,attr_key,attr_val)
+                            setattr(self,attr,attr_val)
 
         #
         #   HANDLERS
@@ -227,7 +215,8 @@ class node:
 
         #print "Constructing node: ",new_node, "\t\t","p:",self
 
-        return new_node
+        if not new_node.meta_:
+            return new_node
         
 
     def __repr__(self):
@@ -251,49 +240,18 @@ class node:
 
     def __setattr__(self,name,value):
 
-        if name in self.__dict__['__wfattrs__'].keys():
-            #test to see if it's an attribute defined by an <attribute> tag
-            self.__dict__['__wfattrs__'][name] = value
-        else:
-            #set the value of the attribute in the normal method
-            self.__dict__[name] = value
+        #set the value of the attribute in the normal method
+        self.__dict__[name] = value
 
         #update any bindings
         
-        #if there are bindings for this attribute
-
-        if hasattr(self,'__bindings__'):
-            if self.__bindings__.has_key(name):
-                #for each lambda "set" function
-                for binding, context in self.__bindings__[name]:
-                    #call it and set the value
-                    binding(context,value)
-
+        #fire handlers
         #if there are constraints for this attribute
-        if hasattr(self,'__constraints__'):
-            if self.__constraints__.has_key(name):
-                for node,attr in self.__constraints__[name].values():
-                    node.notify(attr)
-                    
+        if self.senders_.has_key(name):
+            for node in self.senders_[name]:
+                print name,node
+                self.senders_[name][node]()
         
-    def __getattr__(self,name):
-        #first we need to see if it's a defined wildfire attribute
-        if name in self.__wfattrs__.keys():
-            #now let's see if it has a getter function
-            if name in self.__getters__.keys():
-                #if so, get the new value, and store it
-                #we don't really need the for loop here, it just makes the code cleaner
-                for getter, context in self.__getters__[name]:
-                    return getter(context)
-
-
-            #either way, let's return the value
-            return self.__wfattrs__[name]
-        
-        #raise a similar error if we can't find them!!!!!
-        raise AttributeError("'%s' does not exist as a standard or WF attribute" % name)
-
-    
     def get_siblings(self):
         """Return the nodes siblings. (including itself!)"""
         return self.parent.child_nodes
@@ -301,15 +259,15 @@ class node:
     #make siblings accessible as a property
     siblings = property(get_siblings)
 
-    def notify(self,attribute):
-        try:
-            value = self._constraint[attribute]()
-            setattr(self,attribute,value)
-        except Exception, e:
-            print e
-            raise ValueError('A notifier is trying to call a constraint the DNE!')
+    def __getitem__(self, attr):
+        """make it possible to get interior nodes dictionary style"""
+        print "!",attr
+        return getattr(self, attr)
 
-    
+    def __setitem__(self, attr, val):
+        """make it possible to set interior nodes dictionary style"""
+        setattr(self, attr, val)
+
 
 class Library(node):
     __tag__ = u'library'
@@ -341,9 +299,6 @@ class Library(node):
                     if os.path.isfile(os.path.join(self.import_path,f,'__init__.wfx')):
                         Library(self,module=f)
 
-
-                    
-
         #make sure it's good
         if not os.path.isfile(path):
             raise IOError('Cannot find file: %s!' % path)
@@ -359,18 +314,16 @@ class Library(node):
             raise ImportError('Could not load module %s' % path)
         
         #recursively setup the children
-        kiddos = []
-        for kiddo in library_dom.getchildren():
-            new_kiddo = self.create(kiddo,data=self.data)
-            if new_kiddo is not None:
-                kiddos.append(new_kiddo)
+        children = []
+        for child in library_dom.getchildren():
+            new_child = self.create(child,data=self.data)
+            if new_child is not None:
+                children.append(new_child)
 
-        self.child_nodes.extend(kiddos)
+        self.child_nodes.extend(children)
 
         if self.parent is not None:
             setattr(self.parent,self.module,self)
-            
-            
 
 class Import(node):
     __tag__ = u'import'
@@ -378,96 +331,114 @@ class Import(node):
         import basetags
         basetags.__dict__[self.tag.get('module')] = __import__(self.tag.get('module'))
 
-class Script(node):
-    __tag__ = u'script'
+# class Script(node):
+#     __tag__ = u'script'
 
-    def _construct(self):
-        self.evaluate = False
-        self.python_statement = self.tag.text
+#     def _construct(self):
+#         self.evaluate = False
+#         self.python_statement = self.tag.text
 
-    def __call__(self,event=None):
-        try:
-            #event should be generic enough for various toolkits to pass event instances.
 
-            #setting up local scopes
-            local_vars = {}
+#     def __call__(self,event=None):
+#         try:
+#             #event should be generic enough for various toolkits to pass event instances.
+
+#             #setting up local scopes
+#             local_vars = {}
             
-            local_vars['self'] = self.parent
+#             local_vars['self'] = self.parent
 
-            if self.parent is not None:
-                local_vars['parent'] = self.parent.parent
+#             if self.parent is not None:
+#                 local_vars['parent'] = self.parent.parent
 
-            #making the local scope accessible
-            if local_vars.has_key('parent'):
-                if local_vars['parent'] is not None:
-                    local_vars = stuff_dict(local_vars,local_vars['parent'].__dict__)
+#             #making the local scope accessible
+#             if local_vars.has_key('parent'):
+#                 if local_vars['parent'] is not None:
+#                     local_vars = stuff_dict(local_vars,local_vars['parent'].__dict__)
 
-            local_vars = stuff_dict(local_vars,local_vars['self'].__dict__)
+#             local_vars = stuff_dict(local_vars,local_vars['self'].__dict__)
 
-            #adding the doc
-            local_vars['application'] = self.application
+#             #adding the doc
+#             local_vars['application'] = self.application
             
-            #look for toplevel library nodes and assigning them to easy to access names
-            for attribute in self.application.__dict__:
-                if hasattr(self.application.__dict__[attribute],'import_path'):
-                    local_vars[attribute] = self.application.__dict__[attribute]
-                    #exec("%s = doc.__dict__['%s']" % (attribute,attribute))
+#             #look for toplevel library nodes and assigning them to easy to access names
+#             for attribute in self.application.__dict__:
+#                 if hasattr(self.application.__dict__[attribute],'import_path'):
+#                     local_vars[attribute] = self.application.__dict__[attribute]
+#                     #exec("%s = doc.__dict__['%s']" % (attribute,attribute))
 
-            #add the defined classes
-            local_vars = stuff_dict(local_vars,wildfire.tags)
+#             #add the defined classes
+#             local_vars = stuff_dict(local_vars,wildfire.tags)
                     
-            #executing the handler code
-            if not self.evaluate:
-                exec correct_indentation(self.python_statement) in local_vars, globals()
-            else:
-                print self.python_statement
-                print "!",correct_indentation(self.python_statement)
-                return eval(correct_indentation(self.python_statement),local_vars)
+#             #executing the handler code
+#             if not self.evaluate:
             
-        except Exception, e:
-            #detailed error messages if we blow a bolt
-            print "An error occured in WFX embedded code!"
+#                 exec correct_indentation(self.python_statement) in local_vars, globals()
+#             else:
+#                 print self.python_statement
+#                 print "!",correct_indentation(self.python_statement)
+#                 return eval(correct_indentation(self.python_statement),local_vars)
+            
+#         except Exception, e:
+#             #detailed error messages if we blow a bolt
+#             print "An error occured in WFX embedded code!"
 
-            if self.tag is not None:
-                print "The handler was on='%s'" % self.tag.get('on')
-            print "It's parent was %s" % self.parent
-            print "The code was..."
-            if hasattr(self,'python_statement'):
-                print self.python_statement
-            try:
-                import traceback
-                print "Here's the traceback..."
-                traceback.print_exc(file=sys.stdout)
-                sys.exit()
-            except ImportError:
-                sys.exit()
+#             if self.tag is not None:
+#                 print "The handler was on='%s'" % self.tag.get('on')
+#             print "It's parent was %s" % self.parent
+#             print "The code was..."
+#             if hasattr(self,'python_statement'):
+#                 print self.python_statement
+#             try:
+#                 import traceback
+#                 print "Here's the traceback..."
+#                 traceback.print_exc(file=sys.stdout)
+#                 sys.exit()
+#             except ImportError:
+#                 sys.exit()
 
-class Handler(Script):
+class Handler(node):
     __tag__ = u'handler'
 
     def _construct(self):
         
         self.evaluate = False
-        
+
         self.python_statement = self.tag.text
 
-        #get the handler name
-        handler_name = self.tag.get('on')
-        #if a list hasn't been setup for this handler
-        if not hasattr(self.parent,handler_name):
-            #create it
-            setattr(self.parent,handler_name,[])
-        else:
-            #if it is there, and it's not a list
-            if not isinstance(getattr(self.parent,handler_name),list):
-                #make it into a list with the first item as the old value
-                setattr(self.parent,handler_name,[getattr(self.parent,handler_name)])
+        if self.python_statement is None:
+            self.python_statement = 'pass'
             
-        #append the new handler
-        getattr(self.parent,handler_name).append(self)
         
+        self.on = self.tag.get('on')
 
+        self.arg = self.tag.get('arg')
 
+        if self.arg == None:
+            self.arg = 'event=None'
+
+    def _init(self):
+        
+        func = ('def %s(%s):' % ( self.on, self.arg ) ) + '\n'
+        for line in correct_indentation(self.python_statement).splitlines():
+            func += '    ' + line + '\n'
+
+        #execute the function, it's now in the scope
+        exec func in self.parent.__dict__
+        #create the function as a bound method
+        #exec "new_bound_method = types.MethodType( new_temp_method, self.parent, wildfire.tags['%s'] )" % ( self.parent.__tag__ ) 
+        
+        self.parent.senders_[self.on] = {self:self.parent[self.on]}
+
+class Script(Handler):
+    __tag__ = u'script'
+
+    def _construct(self):
+        Handler._construct(self)
+        
+        self.on = 'script'
+
+        self.arg = 'event=None'
 
 class Attribute(node):
     """The actual attribute tag."""
@@ -478,7 +449,7 @@ class Attribute(node):
 
     _instantiate_children = False
 
-    __wfattrs__ = {'name':None}
+    wfattrs_ = {'name':None}
     
     default = ''
 
@@ -491,25 +462,9 @@ class Attribute(node):
         #mark it as a defined attribute to the class
         if self.parent:
             #assignt the default value to the attribute, the passed value will be populated later
-            self.parent.__wfattrs__[self.name] = self.default
+            self.parent.wfattrs_.append(self.name) 
+            self.parent[self.name] = self.default
 
-# class Dataset(node):
-#     __tag__ = u'dataset'
-#     def _construct(self):
-#         self.data = None
-
-#         try:
-#             self.data = eval(self.tag.child_nodes[0].wholeText)
-#         except Exception, e:
-#             print e
-
-#         if self.data is None:
-#             for t in self.tag.childNodes:
-#                 if not is_junk(t):
-#                     self.data = t
-            
-    
-        
 class Class(node):
     __tag__ = u'class'
 
@@ -593,55 +548,37 @@ class Replicate(node):
         if self.data != new_data:
             print "Data Changed!"
 
-class EventMapping:
-    def __init__(self,native,runtime):
-        self.native = native
-        self.runtime = runtime
-
-class Event(node):
-    __tag__ = u'event'
-    def _construct(self):
-        self.application.events.append(EventMapping(self.tag.get('name'),self.tag.get('binding')))
-
+#
+# METHOD
+#
+# creates a bound method on the parent class
 class Method(node):
     __tag__ = u'method'
-    def __call__(self,*args):
-        #this method can be called
-        return self.func(*args)
+    meta_ = True
 
     def _construct(self):
         #assemble the anonymous function
         #we don't need to name it because that will be handled by the name/id mechanism
         args = self.tag.get('args')
-        #import pdb
-        #pdb.set_trace()
+
         if args is None:
             args = ''
-        func = ('def wf_temp_func(%s):' % args ) + '\n'
+
+        self.args = args
+
+        self.name = self.tag.get('name')
+
+    def _init(self):
+
+        #create the function text with the proper indentation
+        func = ('def %s(%s):' % ( self.name,self.args ) ) + '\n'
         for line in correct_indentation(self.tag.text).splitlines():
             func += '    ' + line + '\n'
+
         #execute the function, it's now in the scope
-        exec(func)
+
+        exec func in self.parent.__dict__
         
-        #save the function as an attribute
-        self.func = wf_temp_func
-
-        #import pdb
-        #pdb.set_trace()
-
-        if self.tag.get('name'):
-            setattr(self.parent,self.tag.get('name'),self)
-
-class Dataset(node):
-    __tag__ = u'dataset'
-
-    def _construct(self):
-        if self.tag.hasAttribute('src'):
-            usock = urllib.urlopen(self.tag.getAttribute('src'))
-            #t = ElementTree()
-            dom = parse(usock)
-            self.data = etree.fromstring(dom.toxml())
-            pdb.set_trace()
-            usock.close()
-        else:
-            pdb.set_trace()
+        #new_temp_method.__dict__ = self.parent.__dict__
+        #create the function as a bound method
+        #exec "self.parent.%s = types.MethodType( new_temp_method, self.parent, wildfire.tags['%s'] )" % ( self.name, self.parent.__tag__ ) 

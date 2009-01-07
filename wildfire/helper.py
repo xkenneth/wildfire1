@@ -11,18 +11,12 @@ constraint_re = re.compile('\${.*}')
 def clone(element):
     return fromstring(tostring(element))
 
-uid = 0
-
-operators = ['+','-','*','/','//','**','%','<<','>>','&','|','^','~','<','>','==','!=','>=','<=','=','+=','-=','*=','/=','//=','**=','%=','and','or','not']
-
 def call_handlers(node):
     """After a top-level node has finished construction, we need to call all of the handlers in the proper order."""
-    call_func_inorder(node,'construct')
-    call_func_postorder(node,'init')
-    #call_func_postorder(node,'late')
-    #run the script tags
-    run_scripts(node)
-    call_by_level(node,func='late')
+    do(node,'construct')
+    do(node,'init')
+    do_post(node,'script')
+    do_post(node,'late')
 
 def find_lib(paths,module):
     for path in paths:
@@ -38,18 +32,6 @@ def stuff_dict(target_dict,source_dict):
     for k in source_dict.keys():
         target_dict[k] = source_dict[k]
     return target_dict
-
-def get_uid():
-    global uid
-    last = uid
-    uid += 1
-    return last
-
-def run_scripts(node):
-    for child in node.child_nodes:
-        if child.__tag__ == u'script':
-            child()
-        run_scripts(child)
 
 def correct_indentation(script):
     #make sure that it has any newlines in the first place..
@@ -74,79 +56,19 @@ def correct_indentation(script):
         
     return proper_script
 
-def call_list(node,func):
-    #if we've got the function
-    if hasattr(node,func):
-        func_list = getattr(node,func)
-        if hasattr(func_list,'__iter__'):
-            #try to iterate over a list of functions
-            #call the list backwards
-            func_list.reverse()
-            #try to iterate over a list of functions - I HAVE GOOD REASON FOR THIS
-            for f in func_list:
-                f()
-        else:
-            #else try to call a singular function
-            #print getattr(node,func)
-            getattr(node,func)()
 
-def call_func_inorder(node,func):
-    call_list(node,func)
+def do(node,attr):
+    node[attr] = True
+
     for sub_node in node.child_nodes:
-            call_func_inorder(sub_node,func)
-        
-        
-def call_func_postorder(node,func):
-    """pre order function call."""
-    
+        do(sub_node,attr)
+
+def do_post(node,attr):
+
     for sub_node in node.child_nodes:
-        call_func_postorder(sub_node,func)
+        do_post(sub_node,attr)
 
-    call_list(node,func)
-
-def traverse_postorder(node):
-    for sub_node in node.child_nodes:
-        traverse_postorder(sub_node)
-    
-def call_by_level(node,collection=[],depth=0,func=None,top_down=False):
-    """Fire a function by depth of the nodes. All nodes at depth N will be fired before
-    nodes at depth N-1"""
-    
-    try:
-        #see if a list of nodes exists at this depth
-        collection[depth].append(node)
-    except IndexError:
-        #if not create the list with the current node in it
-        collection.append([node])
-        
-    #for all of the children
-    for child_node in node.child_nodes:
-        #do the same thing, noting an increase in depth, make sure the collection gets passed
-        collection = call_by_level(child_node,collection=collection,depth=depth+1)
-
-    #now we should have a list containing lists of the nodes at each level
-    if func is not None:
-        #operating top down
-        if top_down:
-            for level in collection:
-                for node in level:
-                    #call said function if it exists
-                    if hasattr(node,func):
-                        call_list(node,func)
-        else:
-            #operating bottom up
-            for level in range(len(collection)):
-                for node in collection[-(level+1)]:
-                    if hasattr(node,func):
-                        call_list(node,func)
-        
-    #we need to return the collection so the function will work recursively
-    return collection
-
-#def is_junk(node):
-#    #if isinstance(node,xml.dom.minidom.Text) or isinstance(node,xml.dom.minidom.Comment):
-#    if node.tag == u'#text' or node.tag == u'#comment' or node.tag == u'#cdata-section':
-#        return True
+    node[attr] = True
 
 def extend(target,source,attributes=True,ignore_duplicates=False):
 

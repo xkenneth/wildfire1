@@ -16,5 +16,6 @@
     print application.foo.bar
     print application.foo.bar.hello
     print application.world
+    print "PASS"
   </script>
 </wfx>
