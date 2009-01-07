@@ -31,36 +31,12 @@ def run(file,debug=True):
     #we use the first child cause we don't want to deal with the #document tag
     
     
-    #try to find the default GUI libraries
-    
-    # guis = ['wxw','wtk']
-    
-#     for gui in guis:
-#         try:
-#             print gui
-#             library_dom = fromstring("<wfx><library library='%s'/></wfx>" % gui)
-            
-#             print "dom"
-#             ldom = assemble()
-#             print "Using %s" % gui
-#             break
-#         except IOError, e:
-#             print e
-#             print "error"
-#             pass
-
     #initiate the base document
     doc = node()
-    
-    #predefined gui libs
-    #gui_libs = ['wtk']
-    
-    #try to load each one
-    #for lib in gui_libs:
-    #    Library(doc,module=lib)
 
-    #print "DONE IMPORTING BASE LIBRARIES"
-
+    #insert the application node into scope
+    basetags.__dict__['application'] = doc
+    
     #get the dom
     dom = et.parse(file).getroot()
 

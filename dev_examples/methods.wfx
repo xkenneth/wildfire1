@@ -7,9 +7,11 @@
   <method name="test2" args="s">
     print s
   </method>
+
   <script>
     print self
     test(1,2,3)
     test2('PASS')
   </script>
+
 </wfx>

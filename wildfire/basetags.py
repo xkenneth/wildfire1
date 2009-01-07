@@ -8,6 +8,9 @@ import wildfire
 
 import sys, os, string, types
 
+#global
+application = None
+
 #meta_nodes = ['attribute','class']
 
 class node:
@@ -24,30 +27,16 @@ class node:
     #every base tag has a __tag__ name designating the node
     __tag__ = 'node'
     
-    def get_application(self):
-
-        #if we don't have a parent, this must be the doc
-        if self.parent is None:
-            return self
-
-        parent = self.parent
-
-        while(1):
-            if parent.parent is None:
-                break
-            parent = parent.parent
-        
-        return parent
-    
-    application = property(get_application)
-
     def __init__(self,parent=None,tag=None,data=None,**kwargs):
 
+        
         #
         #    INITIALIZATION
         #
 
         self.__dict__['self'] = self
+
+        self.__dict__['application'] = application
 
         #a list of defined attributes
         self.__dict__['wfattrs_'] = []
@@ -91,7 +80,7 @@ class node:
                     #handling names and ids
                     if self.tag.get('id') is not None:
                         #attaching the node to it's parent as the given id
-                        setattr(self.application,str(self.tag.get('id')),self)
+                        setattr(application,str(self.tag.get('id')),self)
             
                     if self.tag.get('name') is not None:
                         #attaching the node to it's parent as the given name
@@ -146,7 +135,7 @@ class node:
         #
 
         #handling given attributes - we need to do this after all of the attribute tags have been executed
-        if self is not self.application:
+        if self is not application:
             if self.tag is not None:
             #for all of the class defined attributes
                 for attr in self.wfattrs_:
@@ -193,7 +182,7 @@ class node:
         #
                             
         #only call on the top-most node
-        if self is self.application:
+        if self is application:
             call_handlers(self)
 
     def create(self,node,data=None):
@@ -207,13 +196,9 @@ class node:
         if hasattr(new_class,'tag'):
             node = extend(node,new_class.tag)
 
-        print new_class
-
         new_node = new_class(self,node)
         
         new_node.data = data
-
-        #print "Constructing node: ",new_node, "\t\t","p:",self
 
         if not new_node.meta_:
             return new_node
@@ -249,7 +234,6 @@ class node:
         #if there are constraints for this attribute
         if self.senders_.has_key(name):
             for node in self.senders_[name]:
-                print name,node
                 self.senders_[name][node]()
         
     def get_siblings(self):
@@ -261,7 +245,6 @@ class node:
 
     def __getitem__(self, attr):
         """make it possible to get interior nodes dictionary style"""
-        print "!",attr
         return getattr(self, attr)
 
     def __setitem__(self, attr, val):
@@ -330,72 +313,6 @@ class Import(node):
     def _construct(self):
         import basetags
         basetags.__dict__[self.tag.get('module')] = __import__(self.tag.get('module'))
-
-# class Script(node):
-#     __tag__ = u'script'
-
-#     def _construct(self):
-#         self.evaluate = False
-#         self.python_statement = self.tag.text
-
-
-#     def __call__(self,event=None):
-#         try:
-#             #event should be generic enough for various toolkits to pass event instances.
-
-#             #setting up local scopes
-#             local_vars = {}
-            
-#             local_vars['self'] = self.parent
-
-#             if self.parent is not None:
-#                 local_vars['parent'] = self.parent.parent
-
-#             #making the local scope accessible
-#             if local_vars.has_key('parent'):
-#                 if local_vars['parent'] is not None:
-#                     local_vars = stuff_dict(local_vars,local_vars['parent'].__dict__)
-
-#             local_vars = stuff_dict(local_vars,local_vars['self'].__dict__)
-
-#             #adding the doc
-#             local_vars['application'] = self.application
-            
-#             #look for toplevel library nodes and assigning them to easy to access names
-#             for attribute in self.application.__dict__:
-#                 if hasattr(self.application.__dict__[attribute],'import_path'):
-#                     local_vars[attribute] = self.application.__dict__[attribute]
-#                     #exec("%s = doc.__dict__['%s']" % (attribute,attribute))
-
-#             #add the defined classes
-#             local_vars = stuff_dict(local_vars,wildfire.tags)
-                    
-#             #executing the handler code
-#             if not self.evaluate:
-            
-#                 exec correct_indentation(self.python_statement) in local_vars, globals()
-#             else:
-#                 print self.python_statement
-#                 print "!",correct_indentation(self.python_statement)
-#                 return eval(correct_indentation(self.python_statement),local_vars)
-            
-#         except Exception, e:
-#             #detailed error messages if we blow a bolt
-#             print "An error occured in WFX embedded code!"
-
-#             if self.tag is not None:
-#                 print "The handler was on='%s'" % self.tag.get('on')
-#             print "It's parent was %s" % self.parent
-#             print "The code was..."
-#             if hasattr(self,'python_statement'):
-#                 print self.python_statement
-#             try:
-#                 import traceback
-#                 print "Here's the traceback..."
-#                 traceback.print_exc(file=sys.stdout)
-#                 sys.exit()
-#             except ImportError:
-#                 sys.exit()
 
 class Handler(node):
     __tag__ = u'handler'
@@ -552,6 +469,7 @@ class Replicate(node):
 # METHOD
 #
 # creates a bound method on the parent class
+
 class Method(node):
     __tag__ = u'method'
     meta_ = True
@@ -578,7 +496,4 @@ class Method(node):
         #execute the function, it's now in the scope
 
         exec func in self.parent.__dict__
-        
-        #new_temp_method.__dict__ = self.parent.__dict__
-        #create the function as a bound method
-        #exec "self.parent.%s = types.MethodType( new_temp_method, self.parent, wildfire.tags['%s'] )" % ( self.name, self.parent.__tag__ ) 
+
