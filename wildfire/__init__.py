@@ -5,12 +5,22 @@ from base import assemble
 from elementtree.ElementTree import fromstring
 import elementtree.ElementTree as et
 
-from basetags import Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method
+from basetags import Library,Import,Handler,Attribute,Class,Script,Replicate,Event,Method
 from basetags import node
 
-from base import call_handlers
 
-tags = [Library,Import,Wfx,View,Handler,Attribute,Class,Script,Replicate,Event,Method,node]
+from helper import call_handlers
+
+tags = {'library':Library,
+        'import':Import,
+        'handler':Handler,
+        'attribute':Attribute,
+        'class':Class,
+        'script':Script,
+        'replicate':Replicate,
+        'event':Event,
+        'method':Method,
+        'node':node}
 
 path = ['.','lib']
 
@@ -45,13 +55,13 @@ def run(file,debug=True):
     doc = node()
 
     #predefined gui libs
-    gui_libs = ['wtk']
+    #gui_libs = ['wtk']
     
     #try to load each one
-    for lib in gui_libs:
-        Library(doc,module=lib)
+    #for lib in gui_libs:
+    #    Library(doc,module=lib)
 
-    print "DONE IMPORTING BASE LIBRARIES"
+    #print "DONE IMPORTING BASE LIBRARIES"
 
     #get the dom
     dom = et.parse(file).getroot()
@@ -59,7 +69,7 @@ def run(file,debug=True):
     #assemble the child nodes
     children = []
     for child in dom.getchildren():
-        children.append(assemble(child,doc))
+        children.append(doc.create(child))
 
     doc.child_nodes = children
         

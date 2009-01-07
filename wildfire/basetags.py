@@ -1,6 +1,4 @@
-from helper import correct_indentation, extend, get_uid, uid, find_lib, is_constraint, stuff_dict
-
-from base import assemble
+from helper import correct_indentation, extend, get_uid, uid, find_lib, is_constraint, stuff_dict, call_handlers
 
 from constraints import bind, constrain
 
@@ -14,6 +12,8 @@ import os
 
 import string
 
+#meta_nodes = ['attribute','class']
+
 class node:
     """The base class for all other nodes."""
 
@@ -26,7 +26,7 @@ class node:
     #every base tag has a __tag__ name designating the node
     __tag__ = 'node'
     
-    def get_doc(self):
+    def get_application(self):
 
         #if we don't have a parent, this must be the doc
         if self.parent is None:
@@ -41,7 +41,7 @@ class node:
         
         return parent
     
-    doc = property(get_doc)
+    application = property(get_application)
 
     def __init__(self,parent=None,tag=None,data=None,**kwargs):
 
@@ -71,7 +71,11 @@ class node:
         self.data = data
 
         #the actual tag (xml) from which this class tag as instantiated from
-        self.tag = tag
+        if tag is not None:
+            self.tag = tag
+        else:
+            if not hasattr(self,'tag'):
+                self.tag = None
 
         #bindings are constraints where we set the value
         self.__bindings__ = {}
@@ -96,18 +100,18 @@ class node:
         #if the tag class accepts names, ie, classes don't accept names
         if self._name:
             if self.tag is not None:
-                
-            #handling names and ids
-                if self.tag.get('id'):
-                    #attaching the node to it's parent as the given id
-                    setattr(self.doc,str(self.tag.get('id')),self)
+                if self.parent is not None:
+                    #handling names and ids
+                    if self.tag.get('id') is not None:
+                        #attaching the node to it's parent as the given id
+                        setattr(self.application,str(self.tag.get('id')),self)
             
-                if self.tag.get('name'):
-                    #attaching the node to it's parent as the given name
-                    setattr(self.parent,str(self.tag.get('name')),self)
+                    if self.tag.get('name') is not None:
+                        #attaching the node to it's parent as the given name
+                        setattr(self.parent,str(self.tag.get('name')),self)
             
         #
-        #   CONSTRUCT
+        #   CONSTRUCT - FOR INSTANTIATING FROM XML
         # 
                     
         #if we have a native construct and a tag, call it, call it
@@ -117,7 +121,7 @@ class node:
                 self._construct()
 
         #
-        #   KEYWORD ARGUMENTS
+        #   KEYWORD ARGUMENTS - FOR INSTANTIATING FROM PYTHON
         #
                 
         #keyword arguments take the place of attributes when the classes are instantiated in python instead of in xml
@@ -145,7 +149,7 @@ class node:
         #construct all of the children recursively
         if self.tag:
             for child in self.tag:
-                new_child = assemble(child,self)
+                new_child = self.create(child)
                 if new_child is not None:
                     self.child_nodes.append(new_child)
 
@@ -154,7 +158,7 @@ class node:
         #
 
         #handling given attributes - we need to do this after all of the attribute tags have been executed
-        if self is not self.doc:
+        if self is not self.application:
             if self.tag is not None:
             #for all of the class defined attributes
                 for attr_key in self.__wfattrs__:
@@ -195,6 +199,36 @@ class node:
                             
                             #set the value of the attribute
                             setattr(self,attr_key,attr_val)
+
+        #
+        #   HANDLERS
+        #
+                            
+        #only call on the top-most node
+        if self is self.application:
+            call_handlers(self)
+
+    def create(self,node,data=None):
+
+        try:
+            new_class = wildfire.tags[node.tag]
+        except KeyError,e:
+            raise KeyError("Class %s not found!" % node.tag)
+
+        
+        if hasattr(new_class,'tag'):
+            node = extend(node,new_class.tag)
+
+        print new_class
+
+        new_node = new_class(self,node)
+        
+        new_node.data = data
+
+        #print "Constructing node: ",new_node, "\t\t","p:",self
+
+        return new_node
+        
 
     def __repr__(self):
 
@@ -327,7 +361,7 @@ class Library(node):
         #recursively setup the children
         kiddos = []
         for kiddo in library_dom.getchildren():
-            new_kiddo = assemble(kiddo,parent=self,data=self.data)
+            new_kiddo = self.create(kiddo,data=self.data)
             if new_kiddo is not None:
                 kiddos.append(new_kiddo)
 
@@ -344,12 +378,6 @@ class Import(node):
         import basetags
         basetags.__dict__[self.tag.get('module')] = __import__(self.tag.get('module'))
 
-class Wfx(node):
-    __tag__ = u'wfx'
-
-class View(node):
-    __tag__ = u'view'
-
 class Script(node):
     __tag__ = u'script'
 
@@ -361,39 +389,39 @@ class Script(node):
         try:
             #event should be generic enough for various toolkits to pass event instances.
 
-            #defining names (so you don't have to use nasty old self)
+            #setting up local scopes
             local_vars = {}
             
-            if self.__tag__ == u'handler':
-                local_vars['this'] = self.parent
-                local_vars['parent'] = self.parent.parent
-            else:
-                local_vars['this'] = self
-                local_vars['parent'] = self.parent
-            
-            #setting up local scopes
-            #import pdb
-            #pdb.set_trace()
-            #if hasattr(local_vars['parent'],'parent'):
-            #    if local_vars['parent'].parent is not None:
-            local_vars = stuff_dict(local_vars,local_vars['parent'].__dict__)
+            local_vars['self'] = self.parent
 
-            local_vars['doc'] = self.doc
+            if self.parent is not None:
+                local_vars['parent'] = self.parent.parent
+
+            #making the local scope accessible
+            if local_vars.has_key('parent'):
+                if local_vars['parent'] is not None:
+                    local_vars = stuff_dict(local_vars,local_vars['parent'].__dict__)
+
+            local_vars = stuff_dict(local_vars,local_vars['self'].__dict__)
+
+            #adding the doc
+            local_vars['application'] = self.application
             
             #look for toplevel library nodes and assigning them to easy to access names
-            for attribute in self.doc.__dict__:
-                if hasattr(self.doc.__dict__[attribute],'import_path'):
-                    local_vars[attribute] = self.doc.__dict__[attribute]
+            for attribute in self.application.__dict__:
+                if hasattr(self.application.__dict__[attribute],'import_path'):
+                    local_vars[attribute] = self.application.__dict__[attribute]
                     #exec("%s = doc.__dict__['%s']" % (attribute,attribute))
 
             #add the defined classes
-            for tag in wildfire.tags:
-                local_vars[tag.__tag__] = tag
+            local_vars = stuff_dict(local_vars,wildfire.tags)
                     
             #executing the handler code
             if not self.evaluate:
                 exec correct_indentation(self.python_statement) in local_vars, globals()
             else:
+                print self.python_statement
+                print "!",correct_indentation(self.python_statement)
                 return eval(correct_indentation(self.python_statement),local_vars)
             
         except Exception, e:
@@ -495,15 +523,20 @@ class Class(node):
         #if it's extending something other than view
         if self.tag.get('extends'):
             #get what it's looking for
-            search_tag = self.tag.get('extends')
+            # search_tag = self.tag.get('extends')
             
-            for tag in wildfire.tags:
-                #find a match
-                if search_tag == tag.__tag__:
-                    parent_tag = tag
+#             for tag in wildfire.tags:
+#                 #find a match
+#                 if search_tag == tag.__tag__:
+#                     parent_tag = tag
 
-                    self.tag = extend(self.tag,parent_tag.tag,attributes=False)
-                    self.tag.attrib.pop('extends')
+#                     self.tag = extend(self.tag,parent_tag.tag,attributes=False)
+#                     self.tag.attrib.pop('extends')
+
+            parent_tag = wildfire.tags[self.tag.get('extends')]
+
+            self.tag = extend(self.tag,wildfire.tags[self.tag.get('extends')].tag,attributes=False)
+
         else:
             #if we're just extending node
             parent_tag = node
@@ -513,23 +546,30 @@ class Class(node):
 
         #create a copy of the class
         #new_class = new.classobj(str(self.tag.get('name')),parent_tag.__bases__, parent_tag.__dict__.copy())
-        exec( 'class %s(parent_tag): pass' % self.tag.get('name') )
-        exec( 'new_class = %s' % self.tag.get('name') )
+        
+        if self.tag.get('extends') is None:
+            parent_tag = node
+        else:
+            parent_tag = wildfire.tags[self.tag.get('extends')]
+            
+        new_class = type(self.tag.get('name'),(parent_tag,object),{})
 
         #assign it's new __tag__
         new_class.__tag__ = self.tag.get('name')
         
         #attach the DOM tag
         new_class.tag = self.tag
-        
+
         #replace it if necessary
-        for i,tag in enumerate(wildfire.tags):
-            if tag.__tag__ == new_class.__tag__:
-                wildfire.tags[i] = new_class
-                return
+        #for i,tag in enumerate(wildfire.tags):
+        #    if tag.__tag__ == new_class.__tag__:
+        #        wildfire.tags[i] = new_class
+        #        return
+
+        wildfire.tags[self.tag.get('name')] = new_class
 
         #else just add it to our list of tags
-        wildfire.tags.append(new_class)
+        #wildfire.tags.append(new_class)
 
 class Replicate(node):
     __tag__ = u'replicate'
@@ -561,7 +601,7 @@ class EventMapping:
 class Event(node):
     __tag__ = u'event'
     def _construct(self):
-        self.doc.events.append(EventMapping(self.tag.get('name'),self.tag.get('binding')))
+        self.application.events.append(EventMapping(self.tag.get('name'),self.tag.get('binding')))
 
 class Method(node):
     __tag__ = u'method'

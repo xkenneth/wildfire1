@@ -55,30 +55,3 @@ def unconstrain(tag_node,attr_name):
         cnode.__constraints__[cattr].pop(tag_node.uid)
 
     tag_node.__constrained_to__[attr_name] = {}
-    
-    
-def setup_constraints(tag_node,tag_attr,cstring,local_vars):
-    
-    cstring = cstring[2:-1]
-    
-    constrained = False
-
-    new_locals = {'cstring':cstring}
-
-    for oper in cstring.split(' '):
-        if oper.strip() != '':
-            if not oper.lower() in operators and not keyword.iskeyword(oper.lower()):
-                oper_s = oper.split('.')
-                if len(oper_s) == 2:
-                    if oper_s[0] in local_vars:
-                        new_locals[oper_s[0]] = local_vars[oper_s[0]]
-                        constrained = True
-                        var = local_vars[oper_s[0]]
-                        constrain(tag_node,tag_attr,var,oper_s[1])
-
-    if constrained:
-        t = lambda: eval(cstring,new_locals)
-        tag_node._constraint[tag_attr] = t
-        tag_node.notify(tag_attr)
-
-    

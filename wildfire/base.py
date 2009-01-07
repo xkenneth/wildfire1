@@ -1,18 +1,10 @@
 #import all of the built in tags
 from helper import extend, call_func_inorder, call_func_postorder, traverse_postorder, call_by_level, is_constraint, run_scripts
-from constraints import setup_constraints
 import wildfire
 import string
 from elementtree.ElementTree import tostring
 
-def call_handlers(node):
-    """After a top-level node has finished construction, we need to call all of the handlers in the proper order."""
-    call_func_inorder(node,'construct')
-    call_func_postorder(node,'init')
-    #call_func_postorder(node,'late')
-    #run the script tags
-    run_scripts(node)
-    call_by_level(node,func='late')
+
     
     
 def assemble(tree,parent=None,data=None,debug=False):
@@ -70,20 +62,10 @@ def construct_class(node,parent):
     """Create a node from the xml tag."""
     
     #for all of the available tag_names
-    for tag in wildfire.tags:
-        #find the tag to create
-        if tag.__tag__ == node.tag:
-            
-            #add new tags that have been added
-            if hasattr(tag,'tag'):
-                node = extend(node,tag.tag)
 
-            #create an instance
-            new_node = tag(parent,node)
-            
-            #add new attributes
-            return new_node
+    if hasattr(wildfire.tags[node.tag],'tag'):
+        node = extend(node,wildfire.tags[node.tag].tag)
+    
+    new_node = wildfire.tags[node.tag](parent,node)
 
-        
-    #if you reach this point, you've gone to far
-    raise TypeError('Tag ( %s ) not found!' % node.tag)
+    return new_node

@@ -1,4 +1,5 @@
 Wildfire 0.3
+Python-XML Language
 
 Welcome to the wildfire run-time!
 
@@ -15,6 +16,11 @@ Author: Kenneth Miller
 Email: xkenneth@gmail.com
 Homepage: www.openwfx.com
 	  www.xkenneth.com
+
+Author: James Robey
+Email: circlecycle@gmail.com
+
+Copyright 2009 Kenneth Miller, James Robey
 
 ### CHANGELOG ###
 0.2 Migrated wildfire to gxml.

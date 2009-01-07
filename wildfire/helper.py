@@ -15,6 +15,15 @@ uid = 0
 
 operators = ['+','-','*','/','//','**','%','<<','>>','&','|','^','~','<','>','==','!=','>=','<=','=','+=','-=','*=','/=','//=','**=','%=','and','or','not']
 
+def call_handlers(node):
+    """After a top-level node has finished construction, we need to call all of the handlers in the proper order."""
+    call_func_inorder(node,'construct')
+    call_func_postorder(node,'init')
+    #call_func_postorder(node,'late')
+    #run the script tags
+    run_scripts(node)
+    call_by_level(node,func='late')
+
 def find_lib(paths,module):
     for path in paths:
         #if path/module is a dir
@@ -36,13 +45,17 @@ def get_uid():
     uid += 1
     return last
 
-def run_scripts(doc):
-    for node in doc.child_nodes:
-        if node.__tag__ == u'script':
-            node()
-        run_scripts(node)
+def run_scripts(node):
+    for child in node.child_nodes:
+        if child.__tag__ == u'script':
+            child()
+        run_scripts(child)
 
 def correct_indentation(script):
+    #make sure that it has any newlines in the first place..
+    if script.find('\n') == -1:
+        return script
+    
     #split by line, take the first empty line out
     lines = script.split('\n')
     
@@ -212,5 +225,11 @@ if __name__ == '__main__':
             #print self.node2.toprettyxml()
 
             self.failIfEqual(self.node1,new_node1)
+
+    class CorrectIndentation(unittest.TestCase):
+        def test_1(self):
+            self.failUnlessEqual(correct_indentation('test1.value + 1'),'test1.value + 1')
+        def test_2(self):
+            self.failUnlessEqual(correct_indentation('\tdef a():\n\t\tpass'),'def a():\n\tpass\n')
 
     unittest.main()

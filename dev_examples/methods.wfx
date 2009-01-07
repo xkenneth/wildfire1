@@ -1,0 +1,5 @@
+<wfx>
+  <method args="a,b,c">
+    print a,b,c
+  </method>
+</wfx>
